@@ -135,7 +135,7 @@ function Main()
      */
 	 // TODO: Change API to be Kubernetes compatible
     killContainer = function(service)
-        local url = "http://"..MESOSURL.."/v2/apps/"..service.."/tasks"
+        local url = "http://"..MESOSURL.."/api/v1/namespaces/default/pods"
         local data =
         {
             url = url,
@@ -147,7 +147,7 @@ function Main()
                 end
                 for k, v in pairs(util.JSONToTable(body)) do
                     for key, task in pairs(v) do
-                        doKillContainer(service, task['id'])
+                        doKillContainer(service, task['name'])
                         // lame way to only process the first container here
                         break
                     end
@@ -165,7 +165,7 @@ function Main()
      */
 	 // TODO: Change API to be Kubernetes compatible
     doKillContainer = function(service, killme)
-        local url = "http://"..MESOSURL.."/v2/apps/"..service.."/tasks/"..killme
+        local url = "http://"..MESOSURL.."api/v1/namespaces/default/pods/"..killme
         local data =
         {
             url = url,
