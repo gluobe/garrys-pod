@@ -42,7 +42,7 @@ function Main()
     // TODO: rewrite this http.Fetch() too
 	// TODO: Change API to be Kubernetes compatibl
   ]]
-    http.Fetch( "http://"..MESOSURL.."/apis/apps/v1beta1/namespaces/default/deployments/nginx3",
+    http.Fetch( "http://"..MESOSURL.."/apis/apps/v1beta1/namespaces/default/deployments/nginxnpc",
         function(body, len, headers, code)
             httpConnected(body, len, headers, code)
     	end,
@@ -62,22 +62,20 @@ function Main()
             return
         end
         
-        ftable = util.JSONToTable(body)
-		hardcode = {metadata = {name= "nginx3", labels = { type = "npc", team = "green"}, replicas = 5}}
-        for k, v in pairs(ftable) do
-            for key, app in pairs(hardcode) do
-              
-			--[[ TODO: Change API to be Kubernetes compatible]]
-                print("[Mesos] service "..app['name'].." of team "..app['labels']['team'])
-                local n = entitiesSpawned(app['name'])
-                if n < app['replicas'] then
-                    --[[ Spawns something per each container in this app]]
-                    for i=n+1,app['replicas'],1 do
-                        blazeSpawn(app['name'], app['labels']['team'], app['labels']['type'])
-                    end
-                end
-            end
-        end
+		spawnTable = util.JSONToTable(body)
+		serName = spawnTable['metadata']['name']
+		teamName = spawnTable['metadata']['labels']['team']
+		typeName = spawnTable['metadata']['labels']['type']
+		replicas = spawnTable['spec']['replicas']
+		--[[ TODO: Change API to be Kubernetes compatible]]
+			print("[Mesos] service "..serName.." of team "..teamName)
+			local n = entitiesSpawned(serName)
+			if n < replicas then
+				--[[ Spawns something per each container in this app]]
+				for i=n+1,replicas,1 do
+					blazeSpawn(serName, teamName, typeName)
+				end
+			end
     end
 
    --[[
