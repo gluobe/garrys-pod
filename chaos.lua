@@ -1,13 +1,9 @@
-/*
- * Main objective:
- * Defend your containers against the zombie horde. A new zombie will spawn
- * every 5 seconds. Killed containers are respawned withing that same interval.
- */
+--[[ Main objective:
+ Defend your containers against the zombie horde. A new zombie will spawn
+every 5 seconds. Killed containers are respawned withing that same interval. ]]
 
 MESOSURL = "localhost:8001"
 
-PrintMessage(HUD_PRINTTALK, "Welcome to Half-Life2: Container Shooter!")
-PrintMessage(HUD_PRINTTALK, "    * WehkampLabs *")
 
 teams = {}
 teams["model"] = "npc_citizen"
@@ -36,15 +32,16 @@ teams["ivory"]["vector"] = {}
 teams["ivory"]["vector"]["x"] = 0
 teams["ivory"]["vector"]["y"] = -1500
 
-/*
+--[[
  * The main loop, that shouldn't be named Main().
- */
+ ]]
 function Main()
-    /*
+    --[[
      * Gets the list of running application from Marathon.
      */
     // TODO: rewrite this http.Fetch() too
-	// TODO: Change API to be Kubernetes compatible
+	// TODO: Change API to be Kubernetes compatibl
+  ]]
     http.Fetch( "http://"..MESOSURL.."/apis/apps/v1beta1/namespaces/default/deployments/nginx3",
         function(body, len, headers, code)
             httpConnected(body, len, headers, code)
@@ -55,44 +52,47 @@ function Main()
     )
 
     httpFailed = function(error)
-        PrintMessage(HUD_PRINTTALK, "Connection failed, something bad happened:")
-        PrintMessage(HUD_PRINTTALK, error)
+        PrintMessage(HUD_PRINTCONSOLE, "Connection failed, something bad happened:")
+        PrintMessage(HUD_PRINTCONSOLE, error)
     end
 
     httpConnected = function(body, len, headers, code)
-        if code != 200 then
-            PrintMessage(HUD_PRINTTALK, "Received incorrect reply")
+        if code ~= 200 then
+            PrintMessage(HUD_PRINTCONSOLE, "Received incorrect reply")
             return
         end
-
-        for k, v in pairs(util.JSONToTable(body)) do
-            for key, app in pairs(v) do
-			// TODO: Change API to be Kubernetes compatible
-                print("[Mesos] service "..app['metadata']['name'].." of team "..app['labels']['team'])
-                local n = entitiesSpawned(app['metadata']['name'])
-                if n < app['spec']['replicas'] then
-                    // Spawns something per each container in this app
-                    for i=n+1,app['spec']['replicas'],1 do
-                        blazeSpawn(app['metadata']['name'], app['labels']['team'], app['labels']['type'])
+        
+        ftable = util.JSONToTable(body)
+		hardcode = {metadata = {name= "nginx3", labels = { type = "npc", team = "green"}, replicas = 5}}
+        for k, v in pairs(ftable) do
+            for key, app in pairs(hardcode) do
+              
+			--[[ TODO: Change API to be Kubernetes compatible]]
+                print("[Mesos] service "..app['name'].." of team "..app['labels']['team'])
+                local n = entitiesSpawned(app['name'])
+                if n < app['replicas'] then
+                    --[[ Spawns something per each container in this app]]
+                    for i=n+1,app['replicas'],1 do
+                        blazeSpawn(app['name'], app['labels']['team'], app['labels']['type'])
                     end
                 end
             end
         end
     end
 
-    /*
+   --[[
      * Returns the count of all NPCs spawned for this service.
-     */
+     ]]
     entitiesSpawned = function(service)
         if not service then
             return 10000000
         end
-        return table.Count(ents.FindByName(service))
+		return table.Count(ents.FindByName(service))
     end
 
-    /*
+    --[[
      * Does the actual spawn of a NPC/entity.
-     */
+     ]]
     blazeSpawn = function(what, team, type)
         if not teams[team] then
             return
@@ -109,19 +109,19 @@ function Main()
         ent:Activate()
         ent:DropToFloor()
 
-        // not everyone gets a crowbar
+        --[[ not everyone gets a crowbar ]]
         if math.random(1,10) == 1 then
             ent:Give("ai_weapon_crowbar")
         end
 
-        // all your base are belong to team purple
+        --[[ all your base are belong to team purple ]]
         if team == "purple" then
             ent:Give("ai_weapon_rpg")
         end
 
-        // everyone should hate zombies!
+        --[[ everyone should hate zombies! ]]
         for _, zombie in pairs(ents.FindByClass("npc_zombie")) do
-          //make entity a zombie and add Hate to 99
+          --[[ make entity a zombie and add Hate to 99 ]]
             ent:AddRelationship("npc_zombie D_HT 99")
         end
 
@@ -130,53 +130,59 @@ function Main()
         ent:SetSchedule(SCHED_FORCED_GO)
     end
 
-    /*
+    --[[
      * Kills a container that belongs to some service.
      */
-	 // TODO: Change API to be Kubernetes compatible
+	 // TODO: Change API to be Kubernetes compatible ]]
     killContainer = function(service)
-        local url = "http://"..MESOSURL.."/api/v1/namespaces/default/pods"
-        local data =
-        {
-            url = url,
-            method = "GET",
-            success = function(code, body, headers)
-                if code != 200 then
-                    PrintMessage(HUD_PRINTTALK, "[ERROR] Tasklist error: "..service)
-                    return
-                end
-                for k, v in pairs(util.JSONToTable(body)) do
-                    for key, task in pairs(v) do
-                        doKillContainer(service, task['name'])
-                        // lame way to only process the first container here
-                        break
-                    end
-                end
-            end,
-            failed = function(message)
-                print("[ERROR] failed")
-            end
-        }
-        HTTP(data)
-    end
+	
+		http.Fetch( "http://"..MESOSURL.."/api/v1/namespaces/default/pods",
+			function(body, len, headers, code)
+				httpConnected(body, len, headers, code)
+			end,
+			function(error)
+				httpFailed(error)
+			end
+		)
 
-    /*
+		httpFailed = function(error)
+			PrintMessage(HUD_PRINTCONSOLE, "Connection failed, something bad happened:")
+			PrintMessage(HUD_PRINTCONSOLE, error)
+		end
+
+		httpConnected = function(body, len, headers, code)
+        if code ~= 200 then
+            PrintMessage(HUD_PRINTCONSOLE, "Received incorrect reply")
+            return
+        end
+        
+        killTable = util.JSONToTable(body)
+        for k, v in pairs(killTable["items"]) do
+            doKillContainer(service, v['metadata']['name'])
+			--[[ lame way to only process the first container here ]]
+			break
+        end
+		end
+	end
+
+    --[[
      * This sends the DELETE to Marathon.
      */
-	 // TODO: Change API to be Kubernetes compatible
+	 // TODO: Change API to be Kubernetes compatible ]]
     doKillContainer = function(service, killme)
-        local url = "http://"..MESOSURL.."api/v1/namespaces/default/pods/"..killme
+		print("container that will be killed: "..killme)
+        local url = "http://"..MESOSURL.."/api/v1/namespaces/default/pods/"..killme
         local data =
         {
             url = url,
             method = "DELETE",
             parameters = {},
             success = function(code, body, headers)
-                if code != 200 then
+                if code ~= 200 then
                     print("[ERROR] failed to shoot container!")
                     return
                 end
-                PrintMessage(HUD_PRINTTALK, "Container down for "..service)
+                PrintMessage(HUD_PRINTTALK, "Container:  "..killme.."  will go down")
             end,
             failed = function(message)
                 print("[ERROR] failed")
@@ -185,9 +191,9 @@ function Main()
         HTTP(data)
     end
 
-    /*
+    --[[
      * Spawns a killer
-     */
+     ]]
     blazeSpawnKiller = function(what, team, type)
         local e = "npc_zombie"
         ent = ents.Create(e)
@@ -204,11 +210,11 @@ function Main()
     blazeSpawnKiller()
 end
 
-// Do things when a NPC dies or something
+--[[ Do things when a NPC dies or something ]]
 hook.Add("OnNPCKilled", "OnNPCKilled", function(npc, attacker, inflictor)
     local you = attacker:GetName()
 
-    // Spawn some goods when someone dies
+    --[[ Spawn some goods when someone dies ]]
     local goodies = {
         "item_healthkit",
         "item_ammo_smg1",
@@ -220,19 +226,19 @@ hook.Add("OnNPCKilled", "OnNPCKilled", function(npc, attacker, inflictor)
 	goods:SetPos(npc:LocalToWorld(npc:OBBCenter()))
 	goods:Spawn()
 
-    // Actually kill something on Mesos here
+    --[[ Actually kill something on Mesos here
     // Example value of `npc`:
-    //   NPC [184][npc_kleiner]
+    //   NPC [184][npc_kleiner] --]]
     for npcid in string.gmatch(tostring(npc), "%[([%d]+)%]") do
         eid = npcid
     end
     service = tostring(Entity(eid):GetName())
-    if service != "none" then
+    if service ~= "none" then
         killContainer(service)
     end
 
-    // Stuff that happens when the player inflicts death goes here
-    if you != "none" then
+    --[[ Stuff that happens when the player inflicts death goes here ]]
+    if you ~= "none" then
         local theplayer = 1
         local ply = Entity(theplayer)
         local wp = ply:GetActiveWeapon():GetClass()
@@ -240,12 +246,12 @@ hook.Add("OnNPCKilled", "OnNPCKilled", function(npc, attacker, inflictor)
     end
 end)
 
-// headshot!
+--[[ headshot! ]]
 hook.Add("ScaleNPCDamage", "ScaleNPCDamage", function(deadplayer, hitgroup, dmginfo)
     if (hitgroup == 0) then
         PrintMessage(HUD_PRINTTALK, "HEADSHOT!")
     end
 end)
 
-// main()
+--[[ main() ]]
 timer.Create("Main()", 5, 0, Main)
