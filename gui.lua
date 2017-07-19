@@ -4,6 +4,7 @@
  */
 
 good_hud = { };
+enemy_npc = "npc_dog"
 
 local function clr(color) return color.r, color.g, color.b, color.a; end
 
@@ -83,9 +84,9 @@ local function HUDPaint( )
 	local cy = y + vars.padding
 	good_hud:PaintPanel(x, y, width, height, colors.background)
 	local by = th + vars.text_spacing
-    local zombies = #ents.FindByClass("npc_zombie")
+    local zombies = #ents.FindByClass(enemy_npc)
     local allnpcs = #ents.FindByClass("npc_*")
-	local text = "Zombies: "..zombies
+	local text = "Enemies: "..zombies
 	good_hud:PaintText( cx, cy, text, vars.font, colors.text )
 	local text = "Containers: "..allnpcs-zombies
 	good_hud:PaintText( cx, cy + by, text, vars.font, colors.text )
