@@ -3,3 +3,5 @@ Dit wordt nog uitgebreid naar meerder deployments met verschillende labels om ve
 TODO: Meerdere deployments en afhankelijk van het model een specifieke versie deployment neerhalen.
 
 Er zijn globale enemy variabelen om de sprite te bepalen. Deze moet in beide bestanden aangepast worden
+
+Stel voor dat er zelf ene lichte image gemaakt wordt. Bv alpine met twee versies om het clean te houden en een consistent omgeving is.

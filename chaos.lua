@@ -31,6 +31,7 @@ teams["ivory"] = {}
 teams["ivory"]["vector"] = {}
 teams["ivory"]["vector"]["x"] = 0
 teams["ivory"]["vector"]["y"] = -1500
+enemy_npc = "npc_combine_s"
 
 --[[
  * The main loop, that shouldn't be named Main().
@@ -42,7 +43,7 @@ function Main()
     // TODO: rewrite this http.Fetch() too
 	// TODO: Change API to be Kubernetes compatibl
   ]]
-    http.Fetch( "http://"..MESOSURL.."/apis/apps/v1beta1/namespaces/default/deployments/nginxnpc",
+    http.Fetch( "http://"..MESOSURL.."/apis/apps/v1beta1/namespaces/default/deployments",
         function(body, len, headers, code)
             httpConnected(body, len, headers, code)
     	end,
@@ -63,11 +64,12 @@ function Main()
         end
         
 		spawnTable = util.JSONToTable(body)
+		spawnTable = spawnTable['items'][1]
+		--[[ Variables pulled from the created table. Easier than looping through because of the design of the API ]]
 		serName = spawnTable['metadata']['name']
 		teamName = spawnTable['metadata']['labels']['team']
 		typeName = spawnTable['metadata']['labels']['type']
 		replicas = spawnTable['spec']['replicas']
-		--[[ TODO: Change API to be Kubernetes compatible]]
 			print("[Mesos] service "..serName.." of team "..teamName)
 			local n = entitiesSpawned(serName)
 			if n < replicas then
@@ -118,9 +120,9 @@ function Main()
         end
 
         --[[ everyone should hate zombies! ]]
-        for _, zombie in pairs(ents.FindByClass("npc_zombie")) do
+        for _, zombie in pairs(ents.FindByClass(enemy_npc)) do
           --[[ make entity a zombie and add Hate to 99 ]]
-            ent:AddRelationship("npc_zombie D_HT 99")
+            ent:AddRelationship(enemy_npc.." D_HT 99")
         end
 
         ent:NavSetWanderGoal(400, 8000)
@@ -155,10 +157,14 @@ function Main()
         end
         
         killTable = util.JSONToTable(body)
-        for k, v in pairs(killTable["items"]) do
-            doKillContainer(service, v['metadata']['name'])
-			--[[ lame way to only process the first container here ]]
-			break
+		killTable = killTable["items"]
+		--[[ Get a random number from the amount of containers ]]
+		numberC = table.Count(killTable)
+		rand = math.random(numberC)
+        for k, v in pairs(killTable) do
+			if k == rand then
+				doKillContainer(service, v['metadata']['name'])
+			end
         end
 		end
 	end
@@ -180,7 +186,8 @@ function Main()
                     print("[ERROR] failed to shoot container!")
                     return
                 end
-                PrintMessage(HUD_PRINTTALK, "Container:  "..killme.."  will go down")
+                PrintMessage(HUD_PRINTCENTER, "Container:  "..killme.."  will go down")
+				PrintMessage(HUD_PRINTTALK, "Container:  "..killme.."  will go down")
             end,
             failed = function(message)
                 print("[ERROR] failed")
@@ -193,7 +200,7 @@ function Main()
      * Spawns a killer
      ]]
     blazeSpawnKiller = function(what, team, type)
-        local e = "npc_zombie"
+        local e = enemy_npc
         ent = ents.Create(e)
         ent:SetName("none")
         ent:SetPos(Vector(math.random(1,-2000), math.random(1,2000), 200))
