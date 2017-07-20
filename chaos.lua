@@ -6,16 +6,19 @@ MESOSURL = "localhost:8001"
 
 
 teams = {}
-teams["model1"] = "npc_citizen"
-teams["model2"] = "npc_eli"
+model = {}
+model["1"] = "npc_citizen"
+model["2"] = "npc_eli"
+model["3"] = "npc_gman"
 teams["green"] = {}
 teams["green"]["vector"] = {}
-teams["green"]["vector"]["x"] = 500
-teams["green"]["vector"]["y"] = 500
+teams["green"]["vector"]["x"] = 2500
+teams["green"]["vector"]["y"] = -300
+teams["green"]["vector"]["z"] = -12700
 teams["red"] = {}
 teams["red"]["vector"] = {}
-teams["red"]["vector"]["x"] = 500
-teams["red"]["vector"]["y"] = 500
+teams["red"]["vector"]["x"] = 2500
+teams["red"]["vector"]["y"] = -300
 teams["purple"] = {}
 teams["purple"]["vector"] = {}
 teams["purple"]["vector"]["x"] = -2200
@@ -119,10 +122,12 @@ function Main()
 			 Used for rolling updates.
 			]]
 		local e
-		if version ~= "v2" then
-			e = teams["model1"]
-		else
-			e = teams["model2"]
+		if version == "v1" then
+			e = model["1"]
+		elseif version == "v2" then
+			e = model["2"]
+		else 
+			e = model["3"]
 		end
 		
         PrintMessage(HUD_PRINTTALK, "Spawning for service "..what)
@@ -131,7 +136,8 @@ function Main()
         ent:SetName(what)
         local x = teams[team]["vector"]["x"]
         local y = teams[team]["vector"]["y"]
-        ent:SetPos(Vector(math.random(x-300,x+200),math.random(y-300,y+200),150))
+		local z = teams[team]["vector"]["z"]
+        ent:SetPos(Vector(math.random(x-200,x+200),math.random(y-200,y+200),z))
         ent:Spawn()
         ent:Activate()
         ent:DropToFloor()
@@ -156,6 +162,23 @@ function Main()
         ent:SetMovementActivity(ACT_WALK)
         ent:SetSchedule(SCHED_FORCED_GO)
     end
+	
+	fenceSpawnTry = function()
+		local x= 3000
+		local y= -500
+		local z= -12500
+		local rangeTable = {200, -200, 200, -200}
+		
+		local ent = ents.Create("prop_physics")
+		for i=1, 4 do
+			ent:SetModel("models/props_c17/fence02a.mdl")
+			ent:SetPos(Vector(x + rangeTable[i],y + rangeTable[i],z))
+			ent:Spawn()
+			ent:DropToFloor()
+		end
+	end
+	
+	
 
     --[[
      * Kills a container that belongs to some service.
@@ -253,7 +276,37 @@ function Main()
     end
 
     --[[blazeSpawnKiller()]]
+	
+	
 
+end
+
+function fenceSpawn()
+	--[[ Tables will be used to generate a square with 8 blocks ]]
+	local rangeTableX = {-200,0,200,0,-200,-200,200,200}
+	local rangeTableY = {0,200,0,-200,200,-200,200,-200}
+	
+	--[[ Node inlezen en tabel beginnen printen ]]
+	
+	local node = {}
+	local node["name"] = "testnode"
+	local node["name"]["x"] = 3500
+	local node["name"]["y"] = -500
+	local node["name"]["z"] = -12700
+	
+	--[[ Will loop to create the square and will add two stories ]]
+	for i=1, table.Count(rangeTableX) do
+		for j=1, 2 do 
+			local ent = ents.Create("prop_physics")
+			local xS = x + rangeTableX[i]
+			local yS = y + rangeTableY[i]
+			local vec = Vector(xS, yS, z)
+			ent:SetModel("models/hunter/blocks/cube1x1x1.mdl")
+			ent:SetPos(vec)
+			ent:Spawn()
+			ent:DropToFloor()
+		end
+	end
 end
 
 --[[ Do things when a NPC dies or something ]]
@@ -300,4 +353,6 @@ hook.Add("ScaleNPCDamage", "ScaleNPCDamage", function(deadplayer, hitgroup, dmgi
 end)
 
 --[[ main() ]]
+fenceSpawn()
 timer.Create("Main()", 10, 0, Main)
+

@@ -1,3 +1,9 @@
+NPC's will spawn linked to their deployment. When an NPC is killed it will destroy a container of that deployment. 
+Models worden bepaald a.d.h.v van de versie tag op de image: deze gaat van v1 tot v3.
+
+
+
+TODO:
 Er mag maar maximum 1 deployment aanwezig zijn op de cluster. Het pakt altijd de eerste deployment die de API teruggeeft.
 Dit wordt nog uitgebreid naar meerder deployments met verschillende labels om verschillende modellen op te roepen. 
 
