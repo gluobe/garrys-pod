@@ -6,15 +6,16 @@ MESOSURL = "localhost:8001"
 
 
 teams = {}
-teams["model"] = "npc_citizen"
+teams["model1"] = "npc_citizen"
+teams["model2"] = "npc_eli"
 teams["green"] = {}
 teams["green"]["vector"] = {}
 teams["green"]["vector"]["x"] = 500
 teams["green"]["vector"]["y"] = 500
 teams["red"] = {}
 teams["red"]["vector"] = {}
-teams["red"]["vector"]["x"] = -700
-teams["red"]["vector"]["y"] = -500
+teams["red"]["vector"]["x"] = 500
+teams["red"]["vector"]["y"] = 500
 teams["purple"] = {}
 teams["purple"]["vector"] = {}
 teams["purple"]["vector"]["x"] = -2200
@@ -63,21 +64,38 @@ function Main()
             return
         end
         
-		spawnTable = util.JSONToTable(body)
-		spawnTable = spawnTable['items'][1]
-		--[[ Variables pulled from the created table. Easier than looping through because of the design of the API ]]
-		serName = spawnTable['metadata']['name']
-		teamName = spawnTable['metadata']['labels']['team']
-		typeName = spawnTable['metadata']['labels']['type']
-		replicas = spawnTable['spec']['replicas']
-			print("[Mesos] service "..serName.." of team "..teamName)
-			local n = entitiesSpawned(serName)
-			if n < replicas then
-				--[[ Spawns something per each container in this app]]
-				for i=n+1,replicas,1 do
-					blazeSpawn(serName, teamName, typeName)
-				end
+		beforeTable = util.JSONToTable(body)
+		beforeTable = beforeTable['items']
+		local numberD = table.Count(beforeTable)
+		
+		--[[ Will iterate through table to find all deployments ]]
+		for i=1, numberD do
+			spawnTable = beforeTable[i]
+			
+			--[[ Variables pulled from the created table. Easier than looping through because of the design of the API ]]
+			serName = spawnTable['metadata']['name']
+			teamName = spawnTable['metadata']['labels']['team']
+			typeName = spawnTable['metadata']['labels']['type']
+			replicas = spawnTable['spec']['replicas']
+			
+			--[[ Image version because of changing models ]]
+			imageV = spawnTable['spec']['template']['spec']['containers'][1]['image']
+			local version = {}
+			for word in imageV:gmatch("([^:]+)") do 
+				table.insert(version, word)
 			end
+			imageV = version[2]
+			--[[ Creates the entities ]]
+				local n = entitiesSpawned(serName)
+				if n < replicas then
+				print("[Kubernetes] service "..serName.." of team "..teamName)
+					--[[ Spawns something per each container in this app]]
+					for i=n+1,replicas,1 do
+						blazeSpawn(serName, teamName, typeName, imageV)
+					end
+				end
+		end
+		--[[ end of loop ]]
     end
 
    --[[
@@ -93,11 +111,20 @@ function Main()
     --[[
      * Does the actual spawn of a NPC/entity.
      ]]
-    blazeSpawn = function(what, team, type)
+    blazeSpawn = function(what, team, type, version)
         if not teams[team] then
             return
         end
-        local e = teams["model"]
+		--[[ Checks for different image version and provides a different model1
+			 Used for rolling updates.
+			]]
+		local e
+		if version ~= "v2" then
+			e = teams["model1"]
+		else
+			e = teams["model2"]
+		end
+		
         PrintMessage(HUD_PRINTTALK, "Spawning for service "..what)
 
         ent = ents.Create(e)
@@ -135,7 +162,6 @@ function Main()
      */
 	 // TODO: Change API to be Kubernetes compatible ]]
     killContainer = function(service)
-	
 		http.Fetch( "http://"..MESOSURL.."/api/v1/namespaces/default/pods",
 			function(body, len, headers, code)
 				httpConnected(body, len, headers, code)
@@ -156,11 +182,25 @@ function Main()
             return
         end
         
-        killTable = util.JSONToTable(body)
-		killTable = killTable["items"]
+        local preTable = util.JSONToTable(body)
+		preTable = preTable["items"]
+		local numberC = table.Count(preTable)
+		local killTable = {}
+		--[[ Iterate over table and filter out the ones matching the deployment ]]
+		for i=1, numberC do
+			local checkService = preTable[i]['metadata']['name']
+			local serviceTable = {}
+			--[[ matches the first part of the container name with the servicename ]]
+			for word in checkService:gmatch("([^-]+)") do
+				table.insert(serviceTable, word)
+			end
+				if serviceTable[1] == service then
+					table.insert(killTable, preTable[i])
+				end
+		end
 		--[[ Get a random number from the amount of containers ]]
-		numberC = table.Count(killTable)
-		rand = math.random(numberC)
+		local number = table.Count(killTable)
+		local rand = math.random(number)
         for k, v in pairs(killTable) do
 			if k == rand then
 				doKillContainer(service, v['metadata']['name'])
@@ -212,7 +252,8 @@ function Main()
         ent:SetSchedule(SCHED_FORCED_GO)
     end
 
-    blazeSpawnKiller()
+    --[[blazeSpawnKiller()]]
+
 end
 
 --[[ Do things when a NPC dies or something ]]
@@ -237,7 +278,7 @@ hook.Add("OnNPCKilled", "OnNPCKilled", function(npc, attacker, inflictor)
     for npcid in string.gmatch(tostring(npc), "%[([%d]+)%]") do
         eid = npcid
     end
-    service = tostring(Entity(eid):GetName())
+    service = tostring(npc:GetName())
     if service ~= "none" then
         killContainer(service)
     end
@@ -259,4 +300,4 @@ hook.Add("ScaleNPCDamage", "ScaleNPCDamage", function(deadplayer, hitgroup, dmgi
 end)
 
 --[[ main() ]]
-timer.Create("Main()", 5, 0, Main)
+timer.Create("Main()", 10, 0, Main)
