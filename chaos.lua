@@ -1,18 +1,20 @@
 --[[ Main objective:
  Defend your containers against the zombie horde. A new zombie will spawn
 every 5 seconds. Killed containers are respawned withing that same interval. ]]
+nodes = require("nodes")
 
-MESOSURL = "localhost:8001"
-
+KUBERURL = "localhost:8001"
 
 teams = {}
+--[[ Holds the npc model data ]]
 model = {}
+
 model["1"] = "npc_citizen"
 model["2"] = "npc_eli"
 model["3"] = "npc_gman"
 teams["green"] = {}
 teams["green"]["vector"] = {}
-teams["green"]["vector"]["x"] = 2500
+teams["green"]["vector"]["x"] = 3000
 teams["green"]["vector"]["y"] = -300
 teams["green"]["vector"]["z"] = -12700
 teams["red"] = {}
@@ -35,7 +37,7 @@ teams["ivory"] = {}
 teams["ivory"]["vector"] = {}
 teams["ivory"]["vector"]["x"] = 0
 teams["ivory"]["vector"]["y"] = -1500
-enemy_npc = "npc_combine_s"
+enemy_npc = "npc_zombie"
 
 --[[
  * The main loop, that shouldn't be named Main().
@@ -47,7 +49,7 @@ function Main()
     // TODO: rewrite this http.Fetch() too
 	// TODO: Change API to be Kubernetes compatibl
   ]]
-    http.Fetch( "http://"..MESOSURL.."/apis/apps/v1beta1/namespaces/default/deployments",
+    http.Fetch( "http://"..KUBERURL.."/apis/apps/v1beta1/namespaces/default/deployments",
         function(body, len, headers, code)
             httpConnected(body, len, headers, code)
     	end,
@@ -129,9 +131,8 @@ function Main()
 		else 
 			e = model["3"]
 		end
-		
         PrintMessage(HUD_PRINTTALK, "Spawning for service "..what)
-
+		--[[ Create entity and spawn it ]]
         ent = ents.Create(e)
         ent:SetName(what)
         local x = teams[team]["vector"]["x"]
@@ -143,7 +144,7 @@ function Main()
         ent:DropToFloor()
 
         --[[ not everyone gets a crowbar ]]
-        if math.random(1,10) == 1 then
+        if math.random(1,5) == 1 then
             ent:Give("ai_weapon_crowbar")
         end
 
@@ -162,30 +163,13 @@ function Main()
         ent:SetMovementActivity(ACT_WALK)
         ent:SetSchedule(SCHED_FORCED_GO)
     end
-	
-	fenceSpawnTry = function()
-		local x= 3000
-		local y= -500
-		local z= -12500
-		local rangeTable = {200, -200, 200, -200}
-		
-		local ent = ents.Create("prop_physics")
-		for i=1, 4 do
-			ent:SetModel("models/props_c17/fence02a.mdl")
-			ent:SetPos(Vector(x + rangeTable[i],y + rangeTable[i],z))
-			ent:Spawn()
-			ent:DropToFloor()
-		end
-	end
-	
-	
 
     --[[
      * Kills a container that belongs to some service.
      */
 	 // TODO: Change API to be Kubernetes compatible ]]
     killContainer = function(service)
-		http.Fetch( "http://"..MESOSURL.."/api/v1/namespaces/default/pods",
+		http.Fetch( "http://"..KUBERURL.."/api/v1/namespaces/default/pods",
 			function(body, len, headers, code)
 				httpConnected(body, len, headers, code)
 			end,
@@ -208,6 +192,7 @@ function Main()
         local preTable = util.JSONToTable(body)
 		preTable = preTable["items"]
 		local numberC = table.Count(preTable)
+		--[[ Holds the metadata from pods ]]
 		local killTable = {}
 		--[[ Iterate over table and filter out the ones matching the deployment ]]
 		for i=1, numberC do
@@ -238,7 +223,7 @@ function Main()
 	 // TODO: Change API to be Kubernetes compatible ]]
     doKillContainer = function(service, killme)
 		print("container that will be killed: "..killme)
-        local url = "http://"..MESOSURL.."/api/v1/namespaces/default/pods/"..killme
+        local url = "http://"..KUBERURL.."/api/v1/namespaces/default/pods/"..killme
         local data =
         {
             url = url,
@@ -258,55 +243,22 @@ function Main()
         }
         HTTP(data)
     end
-
-    --[[
-     * Spawns a killer
-     ]]
-    blazeSpawnKiller = function(what, team, type)
-        local e = enemy_npc
-        ent = ents.Create(e)
-        ent:SetName("none")
-        ent:SetPos(Vector(math.random(1,-2000), math.random(1,2000), 200))
-        ent:Spawn()
-        ent:Activate()
-        ent:DropToFloor()
-        ent:NavSetWanderGoal(1000, 200)
-        ent:SetMovementActivity(ACT_WALK)
-        ent:SetSchedule(SCHED_FORCED_GO)
-    end
-
-    --[[blazeSpawnKiller()]]
-	
-	
-
 end
 
-function fenceSpawn()
-	--[[ Tables will be used to generate a square with 8 blocks ]]
-	local rangeTableX = {-200,0,200,0,-200,-200,200,200}
-	local rangeTableY = {0,200,0,-200,200,-200,200,-200}
-	
-	--[[ Node inlezen en tabel beginnen printen ]]
-	
-	local node = {}
-	local node["name"] = "testnode"
-	local node["name"]["x"] = 3500
-	local node["name"]["y"] = -500
-	local node["name"]["z"] = -12700
-	
-	--[[ Will loop to create the square and will add two stories ]]
-	for i=1, table.Count(rangeTableX) do
-		for j=1, 2 do 
-			local ent = ents.Create("prop_physics")
-			local xS = x + rangeTableX[i]
-			local yS = y + rangeTableY[i]
-			local vec = Vector(xS, yS, z)
-			ent:SetModel("models/hunter/blocks/cube1x1x1.mdl")
-			ent:SetPos(vec)
-			ent:Spawn()
-			ent:DropToFloor()
-		end
-	end
+function Zombies()
+	blazeSpawnKiller = function()
+        local e = enemy_npc
+        local entZ = ents.Create(e)
+        entZ:SetName("none")
+        entZ:SetPos(Vector(math.random(2000,4000), math.random(1,2000), 12000))
+        entZ:Spawn()
+        entZ:Activate()
+        entZ:DropToFloor()
+        entZ:SetMovementActivity(ACT_WALK)
+        entZ:SetSchedule(SCHED_FORCED_GO)
+    end
+
+    blazeSpawnKiller()
 end
 
 --[[ Do things when a NPC dies or something ]]
@@ -352,7 +304,22 @@ hook.Add("ScaleNPCDamage", "ScaleNPCDamage", function(deadplayer, hitgroup, dmgi
     end
 end)
 
+hook.Add( "PlayerSay", "SpawnZombies", function( ply, text, public )
+	text = string.lower( text ) -- Make the chat message entirely lowercase
+	timer.Create("Zombies()", 5 ,0 , Zombies)
+	timer.Pause("Zombies()")
+	print(text)
+	if ( text == "spawnzombies" ) then
+		timer.Start("Zombies()")
+		PrintMessage(HUD_PRINTTALK, "Start Spawning Zombies")
+	else
+		timer.Stop("Zombies()")
+		PrintMessage(HUD_PRINTTALK, "Stop Spawning Zombies")
+	end
+end )
+
+--[[ Spawn the nodes area from nodes.lua file in /includes/modules ]]
+fenceSpawn(KUBERURL)
 --[[ main() ]]
-fenceSpawn()
-timer.Create("Main()", 10, 0, Main)
+timer.Create("Main()", 8, 0, Main)
 

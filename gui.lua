@@ -4,7 +4,7 @@
  */
 
 good_hud = { };
-enemy_npc = "npc_dog"
+enemy_npc = "npc_zombie"
 
 local function clr(color) return color.r, color.g, color.b, color.a; end
 
