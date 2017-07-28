@@ -3,40 +3,24 @@
 every 5 seconds. Killed containers are respawned withing that same interval. ]]
 
 KUBERURL = "localhost:8001"
-
+counter = 0
 teams = {}
 --[[ Holds the npc model data ]]
 model = {}
-
-model["1"] = "npc_citizen"
-model["2"] = "npc_eli"
-model["3"] = "npc_gman"
+--[[ Used for data control]]
+dControl = {}
+model[1] = {}
+model[1]["model"] = "npc_citizen"
+model[1]["version"] = "v1"
+model[2] = {}
+model[2]["model"] = "npc_eli"
+model[2]["version"] = "v2"
 teams["green"] = {}
-teams["green"]["vector"] = {}
-teams["green"]["vector"]["x"] = 3000
-teams["green"]["vector"]["y"] = -300
-teams["green"]["vector"]["z"] = -12700
 teams["red"] = {}
-teams["red"]["vector"] = {}
-teams["red"]["vector"]["x"] = 2500
-teams["red"]["vector"]["y"] = -300
-teams["red"]["vector"]["z"] = -12700
 teams["purple"] = {}
-teams["purple"]["vector"] = {}
-teams["purple"]["vector"]["x"] = -2200
-teams["purple"]["vector"]["y"] = -400
 teams["ebony"] = {}
-teams["ebony"]["vector"] = {}
-teams["ebony"]["vector"]["x"] = -2100
-teams["ebony"]["vector"]["y"] = 500
 teams["magenta"] = {}
-teams["magenta"]["vector"] = {}
-teams["magenta"]["vector"]["x"] = -1700
-teams["magenta"]["vector"]["y"] = 1900
 teams["ivory"] = {}
-teams["ivory"]["vector"] = {}
-teams["ivory"]["vector"]["x"] = 0
-teams["ivory"]["vector"]["y"] = -1500
 enemy_npc = "npc_zombie"
 
 --[[
@@ -80,26 +64,138 @@ function Main()
 			teamName = contTable['metadata']['labels']['team']
 			typeName = contTable['metadata']['labels']['type']
 			imageV = contTable['spec']['containers'][1]['image']
-			phase = contTable['status']['conditions'][2]['status']
-			print(serName.." has status ".. phase)
+			if contTable['status']['conditions'][2] != nil then
+				phase = contTable['status']['conditions'][2]['status']
+			end
+			nodeName = contTable['spec']['nodeName']
+			--[[print(serName.." has status ".. phase)]]
 			
 			local version = {}
 			for word in imageV:gmatch("([^:]+)") do 
 				table.insert(version, word)
 			end
 			imageV = version[2]
+		
 			if phase == "True" then
 				local n = entitiesSpawned(serName)
 				if n < 1 then 
 					print("[Kubernetes] service "..serName.." of team "..teamName)
-					blazeSpawn(serName, teamName, typeName, imageV)
+					blazeSpawn(serName, teamName, typeName, imageV, nodeName, changedI)
+					
+				end
+			end	
+		end
+		
+	end
+	
+	--[[ USES DEPLOYMENT API TO CHECK FOR DOUBLE MODELS AND CONTAINERS ]]
+	http.Fetch( "http://"..KUBERURL.."/apis/apps/v1beta1/namespaces/default/deployments",
+        function(debody, len, headers, code)
+			httpConnectedDeps(debody, len, headers, code)
+    	end,
+    	function(error)
+            httpFailedDeps(error)
+    	end
+    )
+    httpFailedDeps = function(error)
+        PrintMessage(HUD_PRINTTALK, "Connection failed, something bad happened:")
+        PrintMessage(HUD_PRINTTALK, error)
+    end
+    httpConnectedDeps = function(debody, len, headers, code)
+        if code != 200 then
+            PrintMessage(HUD_PRINTTALK, "Received incorrect reply from nodes API")
+            return
+        end
+		depsTable = util.JSONToTable(debody)
+		depsTable = depsTable['items']
+		depsCount = table.Count(depsTable)
+		for i=1, depsCount do
+			deps2Table = depsTable[i]
+			depsName = deps2Table['metadata']['name']
+			betweenTable = deps2Table['spec']['template']['spec']['containers']
+			depsImage = betweenTable[1]['image']
+			
+			local version = {}
+			for word in depsImage:gmatch("([^:]+)") do 
+				table.insert(version, word)
+			end
+			depsImage = version[2]
+			checkEntities(depsName, depsImage)
+		end
+	end
+	
+	function checkEntities(deploymentN, im)
+		podEnt = ents.GetAll()
+		filtCl = {}
+		for i=1, table.Count(podEnt) do
+			for j=1, table.Count(model) do
+				if podEnt[i]:GetClass() == model[j]["model"] then
+					table.insert(filtCl, podEnt[i])
+				end
+			end
+		end
+		local hash = {}
+		local res = {}
+		for _,v in ipairs(filtCl) do
+		   if (not hash[v]) then
+			   res[#res+1] = v -- you could print here instead of saving to result table if you wanted
+			   hash[v] = true
+		   end
+		end
+		for i=1, table.Count(res) do
+			local stringMatch = {}
+			local containerName = res[i]:GetName()
+			for word in containerName:gmatch("([^-]+)") do 
+				table.insert(stringMatch, word)
+			end
+			if stringMatch[1] == deploymentN then
+				local modelMatch = {}
+				for j=1, table.Count(model) do
+					if model[j]["version"] == im then
+						table.insert(modelMatch, model[j]["model"])
+					end
+				end
+				if res[i]:GetClass() != modelMatch[1] then
+					res[i]:Remove()
 				end
 			end
 		end
 	end
-		--[[ Will iterate through table to find all deployments ]]
-		
-		
+	
+	--[[ function doubleEntities(dataTable)
+		podEnts = ents.GetAll()
+		filtTable = {}
+		for i=1, table.Count(podEnts) do
+			for j=1, table.Count(model) do
+				if podEnts[i]:GetClass() == model[j]["model"] then
+					table.insert(filtTable, podEnts[i])
+				end
+			end
+		end
+		local hash = {}
+		local rest = {}
+		for _,v in ipairs(filtTable) do
+		   if (not hash[v]) then
+			   rest[#rest+1] = v -- you could print here instead of saving to result table if you wanted
+			   hash[v] = true
+		   end
+		end
+		for i=table.Count(dataTable),1,-1 do
+			if rest[i]:GetName() == dataTable[i]['metadata']['name'] then
+				print("------------".. rest[i]:GetName().."---"..dataTable[i]['metadata']['name'])
+				rest[i] = "allo"
+				PrintTable(rest)
+				
+			end
+		end
+		for i=1, table.Count(rest) do
+			if rest[i] != "allo" then
+				rest[i]:Remove()
+				print("*************DESTROYED**********")
+			end
+		end
+	end ]]
+	--[[ FETCH DEPLOYMENT TO CHECK FOR NPC DELETION ]]
 	
 	
    --[[
@@ -109,16 +205,23 @@ function Main()
     entitiesSpawned = function(podName)
         if not podName then
             return 10000000
-        end
-		numberABS = table.Count(ents.FindByName(podName))
-		print(numberABS)
+		end
 		return table.Count(ents.FindByName(podName))
     end
-
+	
+	function is_empty(t)
+		for _,_ in pairs(t) do
+			return false
+		end
+		return true
+	end
+	
+	
+	
     --[[
      * Does the actual spawn of a NPC/entity.
      ]]
-    blazeSpawn = function(what, team, type, version)
+    blazeSpawn = function(what, team, type, version, nodeid, imageChange)
         if not teams[team] then
             return
         end
@@ -127,20 +230,27 @@ function Main()
 			]]
 		local e
 		if version == "v1" then
-			e = model["1"]
+			e = model[1]["model"]
 		elseif version == "v2" then
-			e = model["2"]
+			e = model[2]["model"]
 		else 
-			e = model["3"]
+			e = model[3]["model"]
+		end
+		nodeC = table.Count(node)
+		for i=1, nodeC do
+			if nodeid == node[i]["name"] then
+				xX = node[i]["x"]
+				yY = node[i]["y"]
+				rangeX = rangeTableX[3] - 50
+				rangeY = rangeTableY[2] - 50
+			end
 		end
         PrintMessage(HUD_PRINTTALK, "Spawning for service "..what)
 		--[[ Create entity and spawn it ]]
         ent = ents.Create(e)
         ent:SetName(what)
-        local x = teams[team]["vector"]["x"]
-        local y = teams[team]["vector"]["y"]
-		local z = teams[team]["vector"]["z"]
-        ent:SetPos(Vector(math.random(x-200,x+200),math.random(y-200,y+200),z))
+		local zZ = -12700
+        ent:SetPos(Vector(math.random(xX-rangeX,xX+rangeX),math.random(yY-rangeY,yY+rangeY),zZ))
         ent:Spawn()
         ent:Activate()
         ent:DropToFloor()
@@ -194,19 +304,41 @@ function Main()
     end
 end
 
-function fetchPods()
-	--[[ Fetches the Pods API and returns the data ]]
-	headers = {}
+--[[
+function changeControl(i, imageVer)
 	
-	return pBody
+	http.Fetch( "http://"..MESOSURL.."/v2/apps",
+        function(body, len, headers, code)
+            httpConnected(body, len, headers, code)
+    	end,
+    	function(error)
+            httpFailed(error)
+    	end
+    )
+    httpFailed = function(error)
+        PrintMessage(HUD_PRINTTALK, "Connection failed, something bad happened:")
+        PrintMessage(HUD_PRINTTALK, error)
+    end
+    httpConnected = function(body, len, headers, code)
+        if code != 200 then
+            PrintMessage(HUD_PRINTTALK, "Received incorrect reply")
+            return
+        end
+	
+	newVar = {}
+	if imageVer != dControl[i]['spec']['containers'][1]['image'] then
+		
+	end
+	
 end
+]]
 
 function Zombies()
 	blazeSpawnKiller = function()
         local e = enemy_npc
         local entZ = ents.Create(e)
         entZ:SetName("none")
-        entZ:SetPos(Vector(math.random(3000,4000), math.random(-200,-1500), 12000))
+        entZ:SetPos(Vector(math.random(0,200), math.random(2000,3000), 12700))
         entZ:Spawn()
         entZ:Activate()
         entZ:DropToFloor()
@@ -279,9 +411,8 @@ end )
 	 .....]]
 function fenceSpawn()
 	--[[ Tables will be used to generate a square with 8 blocks ]]
-	local rangeTableX = {-200,0,200,0,-200,-200,200,200}
-	local rangeTableY = {0,200,0,-200,200,-200,200,-200}
-	local URL = KUBERURL
+	rangeTableX = {-200,0,200,0,-200,-200,200,200}
+	rangeTableY = {0,200,0,-200,200,-200,200,-200}
 	--[[ Node inlezen en tabel beginnen printen ]]
 	http.Fetch( "http://"..KUBERURL.."/api/v1/nodes",
         function(body, len, headers, code)
@@ -304,31 +435,37 @@ function fenceSpawn()
 		node = {}
 		apiTable = apiTable["items"]
 		for i=1, table.Count(apiTable) do
-			local metaTable = apiTable[i]["metadata"]
+			local metaTable = apiTable[i]
 			node[i] = {}
-			node[i]["name"] = metaTable["name"]
-			node[i]["x"] = 3500
+			node[i]["name"] = metaTable["metadata"]["name"]
+			node[i]["x"] = 0
 			if i == 1 then
-				node[i]["y"] = -500
+				node[i]["y"] = 3000
 			else
 				local calcY = node[i-1]["y"] - 800
 				node[i]["y"] = calcY
 			end
 			node[i]["z"] = -12700
 			
-			--[[ Add node name in front of the area ]]
-			hook.Add( "HUDPaint", "HelloThere", function()
-				draw.DrawText( "TEST", "Trebuchet24" , ScrW() * 0.5, ScrH() * 0.25, 
-				Color( 0,0,0, 255 ), TEXT_ALIGN_CENTER )
-			end )
+			local memory = {}
+			local mem = metaTable["status"]["capacity"]["memory"]
+			--[[ TODO: Change to till letter ]]
+			for word in mem:gmatch("([^a-zA-Z]+)") do 
+				table.insert(memory, word)
+			end
+			node[i]["memory"] = tonumber(memory[1])/1500000
+			
+			
 		end
 	--[[ Counts the amount of nodes ]]
 		for n=1, table.Count(node) do
 			local z = node[n]["z"]
 			--[[ Loops through the amount of ranges ]]
 			for i=1, table.Count(rangeTableX) do
-				local xS = node[n]["x"] + rangeTableX[i]
-				local yS = node[n]["y"] + rangeTableY[i]
+				rangeTableX[i] = rangeTableX[i] * node[n]["memory"]
+				rangeTableY[i] = rangeTableY[i] * node[n]["memory"]
+				xS = node[n]["x"] + (rangeTableX[i])
+				yS = node[n]["y"] + (rangeTableY[i])
 				--[[ Loops to put two blocks on top of each other ]]
 				for j=1, 2 do 
 					local ent = ents.Create("prop_physics")
@@ -342,15 +479,54 @@ function fenceSpawn()
 			--[[ ends ranges loop ]]	
 			end
 		end
+		hook.Call("ThisTest")
+		print("past hook call")
 	end
+end
 	
 	--[[ Fetches the amount of nodes from nodes.lua ]]
-		
-		
-end
+
 
 --[[ Spawn the nodes area from nodes.lua file in /includes/modules ]]
 fenceSpawn()
 --[[ main() ]]
-timer.Create("Main()", 4, 0, Main)
+timer.Create("Main()", 5, 0, Main)
 
+local textoutput = {
+	["stfu"] = {
+		pos = Vector(-2680.464355, -2416.205078, -150.402771),
+		{r = 0, g = 255, b = 255, a = 255, size = 100, Text = "Welcome to SammyServers!"},
+		{r = 33, g = 255, b = 0, a = 255, size = 100, Text = "Enjoy your stay!"},
+		{r = 0, g = 255, b = 255, a = 255, size = 100, Text = " "},
+		{r = 255, g = 96, b = 0, a = 255, size = 100, Text = "Visit us online at SammyServers.com"},
+	}
+}
+
+hook.Add("ThisTest", "SpawnWelcomeSigns", function()
+	local textscreen = ents.Create("sammyservers_textscreen")
+	print("hook called")
+	print(textscreen)
+	textscreen:SetPos(Vector(0,3000,-12730))
+	textscreen:SetAngles(Angle(0,0,90))
+	textscreen:Spawn()
+	textscreen:Activate()
+	textscreen:SetMoveType(MOVETYPE_NONE)
+	entsE = ents.GetAll()
+		for i=1, table.Count(entsE) do
+			if entsE[i]:GetClass() == "sammyservers_textscreen" then
+				print(entsE[i]:GetName())
+			end
+		end
+	for k,v in pairs(textoutput["stfu"]) do
+		if type(v) != "table" then continue end
+		for _,o in pairs(v) do
+			if _ == "Text" then
+				textscreen:SetNWString(_..k, o)
+				print(o)
+			else
+				textscreen:SetNWInt(_..k, o)
+			end
+		end
+		
+	end
+end)
