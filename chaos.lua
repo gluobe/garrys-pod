@@ -15,6 +15,10 @@ model[1]["version"] = "v1"
 model[2] = {}
 model[2]["model"] = "npc_eli"
 model[2]["version"] = "v2"
+model[3] = {}
+model[3]["model"] = "npc_kleiner"
+model[3]["version"] = "v3"
+
 teams["green"] = {}
 teams["red"] = {}
 teams["purple"] = {}
@@ -162,42 +166,6 @@ function Main()
 		end
 	end
 	
-	--[[ function doubleEntities(dataTable)
-		podEnts = ents.GetAll()
-		filtTable = {}
-		for i=1, table.Count(podEnts) do
-			for j=1, table.Count(model) do
-				if podEnts[i]:GetClass() == model[j]["model"] then
-					table.insert(filtTable, podEnts[i])
-				end
-			end
-		end
-		local hash = {}
-		local rest = {}
-		for _,v in ipairs(filtTable) do
-		   if (not hash[v]) then
-			   rest[#rest+1] = v -- you could print here instead of saving to result table if you wanted
-			   hash[v] = true
-		   end
-		end
-		for i=table.Count(dataTable),1,-1 do
-			if rest[i]:GetName() == dataTable[i]['metadata']['name'] then
-				print("------------".. rest[i]:GetName().."---"..dataTable[i]['metadata']['name'])
-				rest[i] = "allo"
-				PrintTable(rest)
-				
-			end
-		end
-		for i=1, table.Count(rest) do
-			if rest[i] != "allo" then
-				rest[i]:Remove()
-				print("*************DESTROYED**********")
-			end
-		end
-	end ]]
-	--[[ FETCH DEPLOYMENT TO CHECK FOR NPC DELETION ]]
-	
-	
    --[[
      * Returns the count of all NPCs spawned for this service.
      ]]
@@ -229,13 +197,12 @@ function Main()
 			 Used for rolling updates.
 			]]
 		local e
-		if version == "v1" then
-			e = model[1]["model"]
-		elseif version == "v2" then
-			e = model[2]["model"]
-		else 
-			e = model[3]["model"]
+		for i=1, table.Count(model) do
+			if version == "v"..i then
+				e = model[i]["model"]
+			end
 		end
+
 		nodeC = table.Count(node)
 		for i=1, nodeC do
 			if nodeid == node[i]["name"] then
@@ -255,25 +222,23 @@ function Main()
         ent:Activate()
         ent:DropToFloor()
 
-        --[[ not everyone gets a crowbar ]]
+        --[[ not everyone gets a crowbar 
         if math.random(1,3) == 1 then
             ent:Give("ai_weapon_crowbar")
-        end
+        end ]]
 
-        --[[ all your base are belong to team purple ]]
+        --[[ all your base are belong to team purple 
         if team == "purple" then
             ent:Give("ai_weapon_rpg")
-        end
-
-        --[[ everyone should hate zombies! ]]
-        for _, zombie in pairs(ents.FindByClass(enemy_npc)) do
-          --[[ make entity a zombie and add Hate to 99 ]]
-            ent:AddRelationship(enemy_npc.." D_HT 99")
-        end
-
-        ent:NavSetWanderGoal(400, 8000)
-        ent:SetMovementActivity(ACT_WALK)
-        ent:SetSchedule(SCHED_FORCED_GO)
+        end ]]
+		
+		ent:AddRelationship(enemy_npc.." D_HT 99")
+		ent:AddRelationship(enemy_npc.." D_FR 0")
+		ent:CapabilitiesRemove(CAP_MOVE_GROUND)
+		ent:SetMaxHealth(50)
+		ent:SetHealth(50)
+        ent:SetMovementActivity(ACT_IDLE)
+        ent:SetSchedule(SCHED_IDLE_STAND)
     end
 
     --[[
@@ -304,41 +269,19 @@ function Main()
     end
 end
 
---[[
-function changeControl(i, imageVer)
-	
-	http.Fetch( "http://"..MESOSURL.."/v2/apps",
-        function(body, len, headers, code)
-            httpConnected(body, len, headers, code)
-    	end,
-    	function(error)
-            httpFailed(error)
-    	end
-    )
-    httpFailed = function(error)
-        PrintMessage(HUD_PRINTTALK, "Connection failed, something bad happened:")
-        PrintMessage(HUD_PRINTTALK, error)
-    end
-    httpConnected = function(body, len, headers, code)
-        if code != 200 then
-            PrintMessage(HUD_PRINTTALK, "Received incorrect reply")
-            return
-        end
-	
-	newVar = {}
-	if imageVer != dControl[i]['spec']['containers'][1]['image'] then
-		
-	end
-	
-end
-]]
-
 function Zombies()
 	blazeSpawnKiller = function()
         local e = enemy_npc
         local entZ = ents.Create(e)
         entZ:SetName("none")
-        entZ:SetPos(Vector(math.random(0,200), math.random(2000,3000), 12700))
+		
+		rNum = math.random(1,table.Count(node))
+		rangeX = rangeTableX[3] - 50
+		rangeY = rangeTableY[2] - 50
+		xZ = node[rNum]["x"]
+		yZ = node[rNum]["y"]
+		
+        entZ:SetPos(Vector(math.random(xZ-rangeX,xZ+rangeX), math.random(yZ-rangeY,yZ+rangeY), -12700))
         entZ:Spawn()
         entZ:Activate()
         entZ:DropToFloor()
@@ -394,7 +337,7 @@ end)
 
 hook.Add( "PlayerSay", "SpawnZombies", function( ply, text, public )
 	text = string.lower( text ) -- Make the chat message entirely lowercase
-	timer.Create("Zombies()", 5 ,0 , Zombies)
+	timer.Create("Zombies()", 8 ,0 , Zombies)
 	timer.Pause("Zombies()")
 	print(text)
 	if ( text == "spawnzombies" ) then
@@ -411,8 +354,7 @@ end )
 	 .....]]
 function fenceSpawn()
 	--[[ Tables will be used to generate a square with 8 blocks ]]
-	rangeTableX = {-200,0,200,0,-200,-200,200,200}
-	rangeTableY = {0,200,0,-200,200,-200,200,-200}
+	
 	--[[ Node inlezen en tabel beginnen printen ]]
 	http.Fetch( "http://"..KUBERURL.."/api/v1/nodes",
         function(body, len, headers, code)
@@ -438,28 +380,29 @@ function fenceSpawn()
 			local metaTable = apiTable[i]
 			node[i] = {}
 			node[i]["name"] = metaTable["metadata"]["name"]
-			node[i]["x"] = 0
-			if i == 1 then
-				node[i]["y"] = 3000
-			else
-				local calcY = node[i-1]["y"] - 800
-				node[i]["y"] = calcY
-			end
-			node[i]["z"] = -12700
-			
 			local memory = {}
 			local mem = metaTable["status"]["capacity"]["memory"]
 			--[[ TODO: Change to till letter ]]
 			for word in mem:gmatch("([^a-zA-Z]+)") do 
 				table.insert(memory, word)
 			end
-			node[i]["memory"] = tonumber(memory[1])/1500000
-			
-			
+			node[i]["memory"] = tonumber(memory[1])/3000000
+			node[i]["y"] = 2000
+			if i == 1 then
+				node[i]["x"] = -1000
+			else
+				local memX = 1000 * node[i]["memory"]
+				local calcX = node[i-1]["x"] + memX
+				node[i]["x"] = calcX
+			end
+			node[i]["z"] = -12700
 		end
+		PrintTable(node)
 	--[[ Counts the amount of nodes ]]
 		for n=1, table.Count(node) do
 			local z = node[n]["z"]
+			rangeTableX = {-200,0,200,0,-200,-200,200,200}
+			rangeTableY = {0,200,0,-200,200,-200,200,-200}
 			--[[ Loops through the amount of ranges ]]
 			for i=1, table.Count(rangeTableX) do
 				rangeTableX[i] = rangeTableX[i] * node[n]["memory"]
@@ -476,11 +419,10 @@ function fenceSpawn()
 					ent:DropToFloor()
 				--[[ ends 1-2 for ]]
 				end
+				print(xS..","..yS.." for node: "..node[n]["name"])
 			--[[ ends ranges loop ]]	
 			end
 		end
-		hook.Call("ThisTest")
-		print("past hook call")
 	end
 end
 	
@@ -491,42 +433,3 @@ end
 fenceSpawn()
 --[[ main() ]]
 timer.Create("Main()", 5, 0, Main)
-
-local textoutput = {
-	["stfu"] = {
-		pos = Vector(-2680.464355, -2416.205078, -150.402771),
-		{r = 0, g = 255, b = 255, a = 255, size = 100, Text = "Welcome to SammyServers!"},
-		{r = 33, g = 255, b = 0, a = 255, size = 100, Text = "Enjoy your stay!"},
-		{r = 0, g = 255, b = 255, a = 255, size = 100, Text = " "},
-		{r = 255, g = 96, b = 0, a = 255, size = 100, Text = "Visit us online at SammyServers.com"},
-	}
-}
-
-hook.Add("ThisTest", "SpawnWelcomeSigns", function()
-	local textscreen = ents.Create("sammyservers_textscreen")
-	print("hook called")
-	print(textscreen)
-	textscreen:SetPos(Vector(0,3000,-12730))
-	textscreen:SetAngles(Angle(0,0,90))
-	textscreen:Spawn()
-	textscreen:Activate()
-	textscreen:SetMoveType(MOVETYPE_NONE)
-	entsE = ents.GetAll()
-		for i=1, table.Count(entsE) do
-			if entsE[i]:GetClass() == "sammyservers_textscreen" then
-				print(entsE[i]:GetName())
-			end
-		end
-	for k,v in pairs(textoutput["stfu"]) do
-		if type(v) != "table" then continue end
-		for _,o in pairs(v) do
-			if _ == "Text" then
-				textscreen:SetNWString(_..k, o)
-				print(o)
-			else
-				textscreen:SetNWInt(_..k, o)
-			end
-		end
-		
-	end
-end)
