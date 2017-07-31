@@ -47,17 +47,17 @@ end
 local vars = {
 	font = "TargetID",
 	padding = 10,
-	margin = 250,
+	margin = 100,
 	text_spacing = 2,
 	bar_spacing = 5,
 	bar_height = 16,
-	width = 0.25
+	width = 0.20
 }
 
 local colors = {
 	background = {
-		border = Color( 190, 255, 128, 255 ),
-		background = Color( 120, 240, 0, 75 )
+		border = Color( 140, 31, 26, 255 ),
+		background = Color( 120, 31, 26, 180 )
 	},
 	text = {
 		shadow = Color( 0, 0, 0, 200 ),
@@ -74,7 +74,7 @@ local function HUDPaint( )
 	client = client or LocalPlayer()
 	if (!client:Alive()) then return; end
 	local _, th = good_hud:TextSize("TEXT", vars.font)
-	local i = 8
+	local i = 2
 	local width = vars.width * ScrW()
 	local bar_width = width - ( vars.padding * i )
 	local height = ( vars.padding * i ) + ( th * i ) + ( vars.text_spacing * i ) + ( vars.bar_height * i ) + vars.bar_spacing

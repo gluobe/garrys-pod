@@ -3,7 +3,7 @@
 every 5 seconds. Killed containers are respawned withing that same interval. ]]
 
 KUBERURL = "localhost:8001"
-counter = 0
+countTimer = 0
 teams = {}
 --[[ Holds the npc model data ]]
 model = {}
@@ -92,6 +92,8 @@ function Main()
 		
 	end
 	
+
+	
 	--[[ USES DEPLOYMENT API TO CHECK FOR DOUBLE MODELS AND CONTAINERS ]]
 	http.Fetch( "http://"..KUBERURL.."/apis/apps/v1beta1/namespaces/default/deployments",
         function(debody, len, headers, code)
@@ -166,6 +168,8 @@ function Main()
 		end
 	end
 	
+	--[[ This makes it possible to start showing node info ]]
+	countTimer = countTimer + 1
    --[[
      * Returns the count of all NPCs spawned for this service.
      ]]
@@ -267,6 +271,7 @@ function Main()
         }
         HTTP(data)
     end
+
 end
 
 function Zombies()
@@ -382,31 +387,37 @@ function fenceSpawn()
 			node[i]["name"] = metaTable["metadata"]["name"]
 			local memory = {}
 			local mem = metaTable["status"]["capacity"]["memory"]
+			local cores = metaTable["status"]["capacity"]["cpu"]
+			node[i]["memory"] = mem
+			node[i]["cores"] = cores
 			--[[ TODO: Change to till letter ]]
 			for word in mem:gmatch("([^a-zA-Z]+)") do 
 				table.insert(memory, word)
 			end
-			node[i]["memory"] = tonumber(memory[1])/3000000
+			node[i]["calcmemory"] = tonumber(memory[1])/3000000
 			node[i]["y"] = 2000
 			if i == 1 then
 				node[i]["x"] = -1000
 			else
-				local memX = 1000 * node[i]["memory"]
+				local memX = 1000 * node[i]["calcmemory"]
 				local calcX = node[i-1]["x"] + memX
 				node[i]["x"] = calcX
 			end
 			node[i]["z"] = -12700
 		end
-		PrintTable(node)
 	--[[ Counts the amount of nodes ]]
 		for n=1, table.Count(node) do
 			local z = node[n]["z"]
 			rangeTableX = {-200,0,200,0,-200,-200,200,200}
 			rangeTableY = {0,200,0,-200,200,-200,200,-200}
+			node[n]["xRangeTable"] = {}
+			node[n]["yRangeTable"] = {}
 			--[[ Loops through the amount of ranges ]]
 			for i=1, table.Count(rangeTableX) do
-				rangeTableX[i] = rangeTableX[i] * node[n]["memory"]
-				rangeTableY[i] = rangeTableY[i] * node[n]["memory"]
+				rangeTableX[i] = rangeTableX[i] * node[n]["calcmemory"]
+				rangeTableY[i] = rangeTableY[i] * node[n]["calcmemory"]
+				node[n]["xRangeTable"][i] = rangeTableX[i]
+				node[n]["yRangeTable"][i] = rangeTableY[i]
 				xS = node[n]["x"] + (rangeTableX[i])
 				yS = node[n]["y"] + (rangeTableY[i])
 				--[[ Loops to put two blocks on top of each other ]]
@@ -419,17 +430,57 @@ function fenceSpawn()
 					ent:DropToFloor()
 				--[[ ends 1-2 for ]]
 				end
-				print(xS..","..yS.." for node: "..node[n]["name"])
 			--[[ ends ranges loop ]]	
 			end
 		end
 	end
 end
 	
-	--[[ Fetches the amount of nodes from nodes.lua ]]
+function giveNodeInfo()
+	if countTimer >=2 then
+		ert = ents.GetAll()
+		for i=1, table.Count(ert) do
+			if ert[i]:GetClass() == "player" then
+				plyr = ert[i]
+			end
+		end
+		for i=1, table.Count(node) do
+			local pos1 = Vector(node[i]["x"]-node[i]["xRangeTable"][3],node[i]["y"]-node[i]["yRangeTable"][2],-12799.968750)
+			local pos2 = Vector(node[i]["x"]+node[i]["xRangeTable"][3],node[i]["y"]+node[i]["yRangeTable"][2],-12799.968750)
+			local containersList = ""
+			for n=1, table.Count(podsTable) do
+				if podsTable[n]['spec']['nodeName'] == node[i]["name"] then
+					containersList = containersList.."\n           "..podsTable[n]["metadata"]["name"]
+				end
+			end
+			OrderVectors(pos1,pos2)
+			checkT = plyr:GetPos():WithinAABox(pos1,pos2)
+			if plyr:GetPos():WithinAABox(pos1,pos2) then
+				
+				PrintMessage(HUD_PRINTCENTER, "Node:\n           "..node[i]["name"]..
+											  "\nMemory:\n           "..node[i]["memory"]..
+											  "\nCPU:\n           "..node[i]["cores"]..
+											  "\nContainers: "..containersList)
+			end
+		end
+	end
+end
+
+function setSpawn()
+	ert = ents.GetAll()
+	for i=1, table.Count(ert) do
+		if ert[i]:GetClass() == "player" then
+			plyrs = ert[i]
+		end
+	end
+	plyrs:SetPos(Vector(277.619232, 994.124634, -12223.968750))
+end
 
 
 --[[ Spawn the nodes area from nodes.lua file in /includes/modules ]]
+
+setSpawn()
 fenceSpawn()
---[[ main() ]]
-timer.Create("Main()", 5, 0, Main)
+timer.Create("Main()", 4, 0, Main)
+timer.Create("nodeInfo()", 1,0,giveNodeInfo)
+
