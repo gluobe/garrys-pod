@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: threenginx
+spec:
+  replicas: 5
+  template:
+    metadata:
+      labels:
+        team: green
+        type: npc
+    spec:
+      containers:
+        - image: tourna/nginx:v3
+          name: threenginx

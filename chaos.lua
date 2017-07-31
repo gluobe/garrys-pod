@@ -3,7 +3,6 @@
 every 5 seconds. Killed containers are respawned withing that same interval. ]]
 
 KUBERURL = "localhost:8001"
-countTimer = 0
 teams = {}
 --[[ Holds the npc model data ]]
 model = {}
@@ -27,6 +26,8 @@ teams["magenta"] = {}
 teams["ivory"] = {}
 enemy_npc = "npc_zombie"
 
+util.AddNetworkString("NodeMessage")
+util.AddNetworkString("breakHUD")
 --[[
  * The main loop, that shouldn't be named Main().
  ]]
@@ -169,7 +170,6 @@ function Main()
 	end
 	
 	--[[ This makes it possible to start showing node info ]]
-	countTimer = countTimer + 1
    --[[
      * Returns the count of all NPCs spawned for this service.
      ]]
@@ -437,7 +437,7 @@ function fenceSpawn()
 end
 	
 function giveNodeInfo()
-	if countTimer >=2 then
+	if podsTable != nil then
 		ert = ents.GetAll()
 		for i=1, table.Count(ert) do
 			if ert[i]:GetClass() == "player" then
@@ -445,22 +445,33 @@ function giveNodeInfo()
 			end
 		end
 		for i=1, table.Count(node) do
-			local pos1 = Vector(node[i]["x"]-node[i]["xRangeTable"][3],node[i]["y"]-node[i]["yRangeTable"][2],-12799.968750)
+			local pos1 = Vector(node[i]["x"]-node[i]["xRangeTable"][3],node[i]["y"]-node[i]["yRangeTable"][2],-12700.968750)
 			local pos2 = Vector(node[i]["x"]+node[i]["xRangeTable"][3],node[i]["y"]+node[i]["yRangeTable"][2],-12799.968750)
-			local containersList = ""
-			for n=1, table.Count(podsTable) do
-				if podsTable[n]['spec']['nodeName'] == node[i]["name"] then
-					containersList = containersList.."\n           "..podsTable[n]["metadata"]["name"]
-				end
-			end
+			netTable = {}
 			OrderVectors(pos1,pos2)
 			checkT = plyr:GetPos():WithinAABox(pos1,pos2)
 			if plyr:GetPos():WithinAABox(pos1,pos2) then
-				
-				PrintMessage(HUD_PRINTCENTER, "Node:\n           "..node[i]["name"]..
-											  "\nMemory:\n           "..node[i]["memory"]..
-											  "\nCPU:\n           "..node[i]["cores"]..
-											  "\nContainers: "..containersList)
+				netTable["node"] = node[i]["name"]
+				netTable["mem"] = node[i]["memory"]
+				netTable["cores"] = node[i]["cores"]
+				number = 1
+				netTable["pods"] = {}
+				for n=1, table.Count(podsTable) do
+					if podsTable[n]['spec']['nodeName'] == node[i]["name"] then
+						
+						netTable["pods"][number] = podsTable[n]["metadata"]["name"]
+						number = number + 1
+					end
+				end
+				net.Start("NodeMessage")
+				net.WriteTable(netTable)
+				net.Send(plyr)
+				break
+			else
+				netTable["node"] = "error"
+				net.Start("NodeMessage")
+				net.WriteTable(netTable)
+				net.Send(plyr)
 			end
 		end
 	end
@@ -481,6 +492,6 @@ end
 
 setSpawn()
 fenceSpawn()
-timer.Create("Main()", 4, 0, Main)
-timer.Create("nodeInfo()", 1,0,giveNodeInfo)
+timer.Create("Main()", 3, 0, Main)
+timer.Create("nodeInfo()", 1, 0,giveNodeInfo)
 

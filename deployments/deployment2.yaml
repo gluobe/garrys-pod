@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: httpdnpc
+spec:
+  replicas: 5
+  template:
+    metadata:
+      labels:
+        team: red
+        type: npc2
+    spec:
+      containers:
+        - image: tourna/httpd:v2
+          name: httpd
