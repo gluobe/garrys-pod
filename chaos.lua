@@ -26,6 +26,8 @@ teams["magenta"] = {}
 teams["ivory"] = {}
 enemy_npc = "npc_zombie"
 
+
+
 util.AddNetworkString("NodeMessage")
 util.AddNetworkString("breakHUD")
 --[[
@@ -38,7 +40,6 @@ function Main()
     // TODO: rewrite this http.Fetch() too
 	// TODO: Change API to be Kubernetes compatibl
   ]]
-		
 		--[[ Data required from the Pods API ]]
 	http.Fetch( "http://"..KUBERURL.."/api/v1/namespaces/default/pods",
         function(pbody, len, headers, code)
@@ -46,7 +47,8 @@ function Main()
     	end,
     	function(error)
             httpFailed(error)
-    	end
+    	end,
+		{"Cache-Control", "no-cache"}
     )
     httpFailed = function(error)
         PrintMessage(HUD_PRINTTALK, "Connection failed, something bad happened:")
@@ -84,6 +86,7 @@ function Main()
 			if phase == "True" then
 				local n = entitiesSpawned(serName)
 				if n < 1 then 
+					
 					print("[Kubernetes] service "..serName.." of team "..teamName)
 					blazeSpawn(serName, teamName, typeName, imageV, nodeName, changedI)
 					
@@ -93,7 +96,32 @@ function Main()
 		
 	end
 	
-
+	function doubleEnts()
+		podEntt = ents.GetAll()
+		filtClt = {}
+		for i=1, table.Count(podEntt) do
+			for j=1, table.Count(model) do
+				if podEntt[i]:GetClass() == model[j]["model"] then
+					table.insert(filtClt, podEntt[i])
+				end
+			end
+		end
+		local hasha = {}
+		local ress = {}
+		for _,v in ipairs(filtClt) do
+		   if (not hasha[v]) then
+			   ress[#ress+1] = v -- you could print here instead of saving to result table if you wanted
+			   hasha[v] = true
+		   end
+		end
+		if table.Count(ress) > table.Count(podsTable) then
+			deletePod = difference(ress, podsTable)
+			PrintTable(deletePod)
+			for i=1, table.Count(deletePod) do
+				deletePod[i]:Remove()
+			end
+		end
+	end
 	
 	--[[ USES DEPLOYMENT API TO CHECK FOR DOUBLE MODELS AND CONTAINERS ]]
 	http.Fetch( "http://"..KUBERURL.."/apis/apps/v1beta1/namespaces/default/deployments",
@@ -204,6 +232,9 @@ function Main()
 		for i=1, table.Count(model) do
 			if version == "v"..i then
 				e = model[i]["model"]
+				break
+			else
+				e = model[1]["model"]
 			end
 		end
 
@@ -342,7 +373,7 @@ end)
 
 hook.Add( "PlayerSay", "SpawnZombies", function( ply, text, public )
 	text = string.lower( text ) -- Make the chat message entirely lowercase
-	timer.Create("Zombies()", 8 ,0 , Zombies)
+	timer.Create("Zombies()", 6 ,0 , Zombies)
 	timer.Pause("Zombies()")
 	print(text)
 	if ( text == "spawnzombies" ) then
@@ -463,6 +494,7 @@ function giveNodeInfo()
 						number = number + 1
 					end
 				end
+				PrintTable(netTable)
 				net.Start("NodeMessage")
 				net.WriteTable(netTable)
 				net.Send(plyr)
@@ -493,5 +525,5 @@ end
 setSpawn()
 fenceSpawn()
 timer.Create("Main()", 3, 0, Main)
-timer.Create("nodeInfo()", 1, 0,giveNodeInfo)
+timer.Create("nodeInfo()", 3, 0,giveNodeInfo)
 

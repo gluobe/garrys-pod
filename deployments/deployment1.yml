@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: nginxnpc
 spec:
-  replicas: 5
+  replicas: 4
   template:
     metadata:
       labels:

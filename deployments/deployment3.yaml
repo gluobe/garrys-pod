@@ -3,12 +3,12 @@ kind: Deployment
 metadata:
   name: threenginx
 spec:
-  replicas: 5
+  replicas: 4
   template:
     metadata:
       labels:
         team: green
-        type: npc
+        type: npc3
     spec:
       containers:
         - image: tourna/nginx:v3
