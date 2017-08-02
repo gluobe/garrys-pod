@@ -31,6 +31,7 @@ This means that it doesn't work in every situation and contains errors when it's
 	1. The coordinates in this demo are designed for the map **gm_flatgrass**
 4. Press **Q** and at the top of your screen an NPC menu should appear. Click it and disable **Join Player Squad**.
 
+
 ## Explanation
 #### Nodes
 If you completed these steps the game should've spawned you on top of a building looking towards some pillars.
@@ -61,6 +62,7 @@ The containers will spawn on a **3** second timer. So updates **aren't instant**
 
 ### Reset
 You can either reset the state of the map by restarting the map or using the console.
+
 - Restarting the map
 	- Press **esc** and click start new game.
 	- Select the same map and everything should reload
