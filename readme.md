@@ -15,6 +15,7 @@ This means that it doesn't work in every situation and contains errors when it's
 	- Steam Account
 	- [Buy here](http://store.steampowered.com/app/4000/Garrys_Mod/)
 - Kubernetes cluster
+	- Can be a [minikube](https://github.com/kubernetes/minikube) instance
 	- Need localhost access through `kubectl proxy`
 	- This code is tested on a 1.6.7 and 1.7.2 cluster
 
@@ -25,10 +26,12 @@ This means that it doesn't work in every situation and contains errors when it's
 2. Search for your Garry's Mod folder in your filesystem.
 	1. For Windows this is default under C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
 	2. In this folder should be a Lua map.
-	3. Drop **chaos.lua** in **/autorun/server**
+	3. Drop **chaos.lua** in **the Lua folder**
 	4. Drop **gui.lua** in **/autorun/client**
 3. Open up Garry's Mod and start a new singleplayer game. 
 	1. The coordinates in this demo are designed for the map **gm_flatgrass**
+	2. Open up the console and type **lua_openscript chaos.lua**
+		1. Default the console is the **~** on QWERTY or the **²** on AZERTY
 4. Press **Q** and at the top of your screen an NPC menu should appear. Click it and disable **Join Player Squad**.
 
 
@@ -43,12 +46,12 @@ The size of each area is dependend on the amount of memory present in the node.
 #### Models
 Models will spawn in the node area's. The model is dependent on the image tag. 
 
-These image tags need to be either:
-	- v1 --> npc_citizen
-	- v2 --> npc_eli
-	- v3 --> npc_kleiner
+These image tags need to be either
+- v1 --> npc_citizen
+- v2 --> npc_eli
+- v3 --> npc_kleiner
 	
-Otherwise it will default to the v1 model. Each model is one specific pod.
+Otherwise it will default to the v1 model. Each model = specific pod.
 
 #### Zombies
 By pressing **Y** the chat window should appear. type **spawnzombies** here and zombies will start spawning in random nodes.

@@ -485,7 +485,7 @@ function fenceSpawn()
 			for word in mem:gmatch("([^a-zA-Z]+)") do 
 				table.insert(memory, word)
 			end
-			node[i]["calcmemory"] = tonumber(memory[1])/3000000
+			node[i]["calcmemory"] = tonumber(memory[1])/2200000
 			
 			--[[x, y and z start values ]]
 			node[i]["y"] = 2000
