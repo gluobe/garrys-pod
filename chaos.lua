@@ -22,7 +22,8 @@ teams["purple"] = {}
 teams["ebony"] = {}
 teams["magenta"] = {}
 teams["ivory"] = {}
-enemy_npc = "npc_zombie"
+-- enemy_npc = "npc_zombie"
+enemy_npc = "npc_antlion"
 
 --[[ Are used to send data strings to the GUI to update the node-information ]]
 util.AddNetworkString("NodeMessage")
@@ -347,8 +348,8 @@ function Main()
 
 end
 
---[[ Creates the zombiemodel ]]
-function Zombies()
+--[[ Creates the enemymodel ]]
+function Enemies()
 	blazeSpawnKiller = function()
         local e = enemy_npc
         local entZ = ents.Create(e)
@@ -414,32 +415,47 @@ hook.Add("ScaleNPCDamage", "ScaleNPCDamage", function(deadplayer, hitgroup, dmgi
     end
 end)
 
---[[ Starts the spawn of the zombies ]]
-hook.Add( "PlayerSay", "SpawnZombies", function( ply, text, public )
+--[[ Starts the spawn of the enemies ]]
+hook.Add( "PlayerSay", "SpawnEnemies", function( ply, text, public )
 	text = string.lower( text ) -- Make the chat message entirely lowercase
-	timer.Create("Zombies()", 5 ,0 , Zombies)
-	timer.Pause("Zombies()")
-	if ( text == "spawnzombies" ) then
-		timer.Start("Zombies()")
-		PrintMessage(HUD_PRINTTALK, "Start Spawning Zombies")
-	else
-		timer.Stop("Zombies()")
-		PrintMessage(HUD_PRINTTALK, "Stop Spawning Zombies")
+		
+	--[[ Stops the spawn of the enemies ]]
+	if ( text == "stopspawnenemies" ) then
+		timer.Stop("Enemies()")
+		-- timer.Destroy("Enemies()")
+		PrintMessage(HUD_PRINTTALK, "Stop Spawning Enemies")
+	-- else
+		-- PrintMessage(HUD_PRINTTALK, "Unrecognized StopSpawnEnemies")
 	end
-end )
-
---[[ Destroys all zombie entities ]]
-hook.Add( "PlayerSay", "DespawnZombies", function( ply, text, public )
-	text = string.lower( text ) -- Make the chat message entirely lowercase
-	if ( text == "destroyzombies" ) then
+	
+	--[[ Stops the spawn of the enemies && Destroys all enemy entities ]]
+	if ( text == "despawnenemies" ) then
+		timer.Stop("Enemies()")
+		-- timer.Destroy("Enemies()")
+		
 		podEnttr = ents.GetAll()
-		zombieTable = {}
+		-- enemyTable = {}
+		PrintMessage(HUD_PRINTTALK, "Stop Spawn & Remove Spawned Enemies")
 		for i=1, table.Count(podEnttr) do
 			if podEnttr[i]:GetClass() == enemy_npc then
 				podEnttr[i]:Remove()
 			end
 		end
 	end
+		
+	--[[ Starts the spawn of the enemies ]]
+	if ( text == "spawnenemies" ) then
+		if ( ! timer.Exists( "Enemies()" ) ) then
+			timer.Create("Enemies()", 5 ,0 , Enemies)
+		end
+		timer.Pause("Enemies()")
+		timer.Start("Enemies()")
+		PrintMessage(HUD_PRINTTALK, "Start Spawning Enemies")
+	-- else
+	-- 	PrintMessage(HUD_PRINTTALK, "Unrecognized SpawnEnemies")
+	end
+		
+	
 end )
 
 --[[ Takes care of the spawning of nodes 
@@ -522,6 +538,11 @@ function fenceSpawn()
 					ent:SetPos(vec)
 					ent:Spawn()
 					ent:DropToFloor()
+					--[[ Set the material of the boxes ]]
+					ent:SetMaterial("phoenix_storms/gear")
+					--[[ Make it so the blocks cannot move ]]
+					local physObj = ent:GetPhysicsObject()
+					if physObj:IsValid( ) then physObj:EnableMotion( false ) end
 				--[[ ends 1-2 for ]]
 				end
 			--[[ ends ranges loop ]]	

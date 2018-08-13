@@ -7,7 +7,7 @@ This means that it doesn't work in every situation and contains errors when it's
 
 ### Known bugs:
 
-- If too many pods die at the same time some script errors will occur and multiple models will spawn. (Don't spawn too many zombies)
+- If too many pods die at the same time some script errors will occur and multiple models will spawn. (Don't spawn too many enemies)
 - If too many pods are on a server the GUI doesn't scale with the amount of pods 
 
 ## Requirements
@@ -53,12 +53,10 @@ These image tags need to be either
 	
 Otherwise it will default to the v1 model. Each model = specific pod.
 
-#### Zombies
-By pressing **Y** the chat window should appear. type **spawnzombies** here and zombies will start spawning in random nodes.
-They will start killing the pods.
-By pressing **Y** again and typing any other message the zombies will stop spawning.
-
-To remove all zombies at once open the chat again and type **destroyzombies**
+#### Enemies
+By pressing **Y** the chat window should appear, type **SpawnEnemies** and enemies will start spawning in random nodes.
+By pressing **Y** again and typing **StopSpawnEnemies**, the enemies will stop spawning but existing enemies will not disappear.
+By pressing **Y** again and typing **DespawnEnemies**, the enemies will stop spawning and all existing enemies will disappear.
 
 ### Timer
 The containers will spawn on a **3** second timer. So updates **aren't instant**.
