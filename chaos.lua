@@ -9,10 +9,10 @@ model[1] = {}
 model[1]["model"] = "npc_citizen"
 model[1]["version"] = "v1"
 model[2] = {}
-model[2]["model"] = "npc_eli"
+model[2]["model"] = "npc_kleiner"
 model[2]["version"] = "v2"
 model[3] = {}
-model[3]["model"] = "npc_kleiner"
+model[3]["model"] = "npc_eli"
 model[3]["version"] = "v3"
 
 --[[ Different teams doesn't really do anything but you need it as a label on your deployment ]]
@@ -252,12 +252,12 @@ function Main()
      * Returns the count of all NPCs spawned for this service.
      ]]
 	 
-    entitiesSpawned = function(podName)
-        if not podName then
-            return 10000000
-		end
-		return table.Count(ents.FindByName(podName))
-    end
+  entitiesSpawned = function(podName)
+      if not podName then
+          return 10000000
+			end
+			return table.Count(ents.FindByName(podName))
+  end
 	
 	--[[ Checks if a table is empty or not ]]
 	function is_empty(t)
@@ -267,84 +267,82 @@ function Main()
 		return true
 	end
 	
-	
-	
-    --[[
-     * Does the actual spawn of a NPC/entity.
-     ]]
-    blazeSpawn = function(what, team, type, version, nodeid)
-        if not teams[team] then
-            return
-        end
-		--[[ Checks for different image version and provides a different model1
-			 Used for rolling updates.
-			]]
-		local e
-		for i=1, table.Count(model) do
-			if version == "v"..i then
-				e = model[i]["model"]
-				break
-			else
-				e = model[1]["model"]
+  --[[
+   * Does the actual spawn of a NPC/entity.
+   ]]
+  blazeSpawn = function(what, team, type, version, nodeid)
+      if not teams[team] then
+          return
+      end
+			--[[ Checks for different image version and provides a different model1
+				 Used for rolling updates.
+				]]
+			local e
+			for i=1, table.Count(model) do
+				if version == "v"..i then
+					e = model[i]["model"]
+					break
+				else
+					e = model[1]["model"]
+				end
 			end
-		end
-		
-		--[[ Decides the spawn of the model with the node location ]]
-		nodeC = table.Count(node)
-		for i=1, nodeC do
-			if nodeid == node[i]["name"] then
-				xX = node[i]["x"]
-				yY = node[i]["y"]
-				rangeX = rangeTableX[3] - 50
-				rangeY = rangeTableY[2] - 50
+			
+			--[[ Decides the spawn of the model with the node location ]]
+			nodeC = table.Count(node)
+			for i=1, nodeC do
+				if nodeid == node[i]["name"] then
+					xX = node[i]["x"]
+					yY = node[i]["y"]
+					rangeX = rangeTableX[3] - 50
+					rangeY = rangeTableY[2] - 50
+				end
 			end
-		end
-        PrintMessage(HUD_PRINTTALK, "Spawning for service "..what)
-		--[[ Create entity and spawn it ]]
-        ent = ents.Create(e)
-        ent:SetName(what)
-		local zZ = -12700
-        ent:SetPos(Vector(math.random(xX-rangeX,xX+rangeX),math.random(yY-rangeY,yY+rangeY),zZ))
-        ent:Spawn()
-        ent:Activate()
-        ent:DropToFloor()
-		
-		--[[ Entity settings ]]
-		ent:AddRelationship(enemy_npc.." D_HT 99")
-		ent:AddRelationship(enemy_npc.." D_FR 0")
-		ent:CapabilitiesRemove(CAP_MOVE_GROUND)
-		ent:SetMaxHealth(50)
-		ent:SetHealth(50)
-        ent:SetMovementActivity(ACT_IDLE)
-        ent:SetSchedule(SCHED_IDLE_STAND)
-    end
+      PrintMessage(HUD_PRINTTALK, "Spawning for service "..what)
+			--[[ Create entity and spawn it ]]
+      ent = ents.Create(e)
+      ent:SetName(what)
+			local zZ = -12700
+      ent:SetPos(Vector(math.random(xX-rangeX,xX+rangeX),math.random(yY-rangeY,yY+rangeY),zZ))
+      ent:Spawn()
+      ent:Activate()
+      ent:DropToFloor()
+	
+			--[[ Entity settings ]]
+			ent:AddRelationship(enemy_npc.." D_HT 99")
+			ent:AddRelationship(enemy_npc.." D_FR 0")
+			ent:CapabilitiesRemove(CAP_MOVE_GROUND)
+			ent:SetMaxHealth(50)
+			ent:SetHealth(50)
+      ent:SetMovementActivity(ACT_IDLE)
+      ent:SetSchedule(SCHED_IDLE_STAND)
+  end
 
-    --[[
-     * This sends the DELETE to Marathon.
-     */
-	 // TODO: Change API to be Kubernetes compatible ]]
-    doKillContainer = function(killme)
-		print("container that will be killed: "..killme)
-        local url = "http://"..KUBERURL.."/api/v1/namespaces/default/pods/"..killme
-        local data =
-        {
-            url = url,
-            method = "DELETE",
-            parameters = {},
-            success = function(code, body, headers)
-                if code ~= 200 then
-                    print("[ERROR] failed to shoot container!")
-                    return
-                end
-                PrintMessage(HUD_PRINTCENTER, "Container:  "..killme.."  will go down")
-				PrintMessage(HUD_PRINTTALK, "Container:  "..killme.."  will go down")
-            end,
-            failed = function(message)
-                print("[ERROR] failed")
-            end
-        }
-        HTTP(data)
-    end
+  --[[
+   * This sends the DELETE to Marathon.
+   */
+ 	// TODO: Change API to be Kubernetes compatible ]]
+  doKillContainer = function(killme)
+	print("container that will be killed: "..killme)
+      local url = "http://"..KUBERURL.."/api/v1/namespaces/default/pods/"..killme
+      local data =
+      {
+          url = url,
+          method = "DELETE",
+          parameters = {},
+          success = function(code, body, headers)
+              if code ~= 200 then
+                  print("[ERROR] failed to shoot container!")
+                  return
+              end
+              PrintMessage(HUD_PRINTCENTER, "Container:  "..killme.."  will go down")
+			PrintMessage(HUD_PRINTTALK, "Container:  "..killme.."  will go down")
+          end,
+          failed = function(message)
+              print("[ERROR] failed")
+          end
+      }
+      HTTP(data)
+  end
 
 end
 
