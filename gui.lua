@@ -1,10 +1,9 @@
-/*
- * Cheap copy/paste code to get some sort of box showing with a tiny bit of
- * information about what's going on.
- */
+-- Cheap copy/paste code to get some sort of box showing with a tiny bit of
+-- information about what's going on.
 
 good_hud = { };
-enemy_npc = "npc_zombie"
+-- enemy_npc = "npc_zombie"
+enemy_npc = "npc_antlion"
 
 local function clr(color) return color.r, color.g, color.b, color.a; end
 
@@ -65,11 +64,10 @@ local colors = {
 	}
 }
 
-/*
- * Draw information about the platform etc.
- * - spawned containers
- * - spawned zombies
- */
+-- Draw information about the platform etc.
+-- * spawned containers
+-- * spawned zombies
+ 
 local function HUDPaint( )
 	client = client or LocalPlayer()
 	if (!client:Alive()) then return; end
