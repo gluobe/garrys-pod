@@ -31,7 +31,7 @@ This means that it doesn't work in every situation and contains errors when it's
 3. Open up Garry's Mod and start a new singleplayer game. 
 	1. The coordinates in this demo are designed for the map **gm_flatgrass**
 	2. Open up the console and type **lua_openscript chaos.lua**
-		1. Default the console is the **~** on QWERTY or the **²** on AZERTY
+		1. Default the console is the button under the escape key.
 4. Press **Q** and at the top of your screen an NPC menu should appear. Click it and disable **Join Player Squad**.
 
 
@@ -69,5 +69,5 @@ You can either reset the state of the map by restarting the map or using the con
 	- Press **esc** and click start new game.
 	- Select the same map and everything should reload
 - Console
-	- Default the console is the **~** on QWERTY or the **�** on AZERTY.
+	- Default the console is the button under the escape key.
 	- type gmod_admin_cleanup and the map should reset.
