@@ -1,4 +1,4 @@
-# Kubernetes cluster-visualization demo
+# Garry's Pod
 
 ## Warnings
 **This is a demo application**.
@@ -16,18 +16,20 @@ This means that it doesn't work in every situation and contains errors when it's
 	- [Buy here](http://store.steampowered.com/app/4000/Garrys_Mod/)
 - Kubernetes cluster
 	- Can be a [minikube](https://github.com/kubernetes/minikube) instance
-	- Need localhost access through `kubectl proxy`
-	- This code is tested on a 1.6.7 and 1.7.2 cluster
+	- Needs localhost:8001 access to Kubernetes API through `kubectl proxy`
+	- This code is tested on a 1.9.7 cluster
 
 ## Setup
 1. Make sure your cluster is running and you're able to connect to it with `kubectl proxy`.
-	1. There needs to be an API connection. 
+	1. There needs to be an active API connection. 
 	2. You can test this by connecting to the GUI through the [browser](http://localhost:8001/ui)
-2. Search for your Garry's Mod folder in your filesystem.
-	1. For Windows this is default under C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
+2. Install the customizations into Garry's Mod 
+	1. Search for your Garry's Mod folder in your filesystem.
+		1. On Windows this is default under C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
+		2. On MacOS this is default under /Users/<USERNAME>/Library/Application Support/Steam/steamapps/common/GarrysMod/garrysmod
 	2. In this folder should be a Lua map.
-	3. Drop **chaos.lua** in **the Lua folder**
-	4. Drop **gui.lua** in **/autorun/client**
+	3. Drop **chaos.lua** in **lua/ folder**
+	4. Drop **gui.lua** in **lua/autorun/client folder**
 3. Open up Garry's Mod and start a new singleplayer game. 
 	1. The coordinates in this demo are designed for the map **gm_flatgrass**
 	2. Open up the console and type **lua_openscript chaos.lua**
@@ -50,14 +52,13 @@ These image tags need to be either
 
 * v1 --> npc_citizen
 * v2 --> npc_kleiner
-* v3 --> npc_eli
 	
 Otherwise it will default to the v1 model. Each model = specific pod.
 
-#### Enemies
-By pressing **Y** the chat window should appear, type **SpawnEnemies** and enemies will start spawning in random nodes.
-By pressing **Y** again and typing **StopSpawnEnemies**, the enemies will stop spawning but existing enemies will not disappear.
-By pressing **Y** again and typing **DespawnEnemies**, the enemies will stop spawning and all existing enemies will disappear.
+#### Bugs
+By pressing **Y** the chat window should appear, type **SpawnBugs** and "bugs" will start spawning in random nodes.
+By pressing **Y** again and typing **StopSpawnBugs**, the "bugs" will stop spawning but existing "bugs" will not disappear.
+By pressing **Y** again and typing **DespawnBugs**, the "bugs" will stop spawning and all existing "bugs" will disappear.
 
 ### Timer
 The containers will spawn on a **3** second timer. So updates **aren't instant**.

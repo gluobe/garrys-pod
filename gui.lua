@@ -1,11 +1,16 @@
--- Cheap copy/paste code to get some sort of box showing with a tiny bit of
--- information about what's going on.
+--[[
+	The code below will show some onscreen information about what is going on:
+	- a general box with the number of pods and bugs
+	- a box when you move inside one of the nodes with additional information
+	  about the node (CPU, memory, pods,...)
+]] 
 
 good_hud = { };
--- enemy_npc = "npc_zombie"
 enemy_npc = "npc_antlion"
 
-local function clr(color) return color.r, color.g, color.b, color.a; end
+local function clr(color)
+	return color.r, color.g, color.b, color.a;
+end
 
 function good_hud:PaintBar(x, y, w, h, colors, value)
 	self:PaintPanel(x, y, w, h, colors);
@@ -64,9 +69,9 @@ local colors = {
 	}
 }
 
--- Draw information about the platform etc.
--- * spawned containers
--- * spawned zombies
+--[[
+	A general box with the number of pods and bugs
+]]
  
 local function HUDPaint( )
 	client = client or LocalPlayer()
@@ -82,15 +87,20 @@ local function HUDPaint( )
 	local cy = y + vars.padding
 	good_hud:PaintPanel(x, y, width, height, colors.background)
 	local by = th + vars.text_spacing
-    local zombies = #ents.FindByClass(enemy_npc)
+	local bugs = #ents.FindByClass(enemy_npc)
     local allnpcs = #ents.FindByClass("npc_*")
-	local text = "Enemies: "..zombies
+	local text = "Bugs: "..bugs
 	good_hud:PaintText( cx, cy, text, vars.font, colors.text )
-	local text = "Containers: "..allnpcs-zombies
+	local text = "Pods: "..allnpcs-bugs
 	good_hud:PaintText( cx, cy + by, text, vars.font, colors.text )
 end
 
 hook.Add( "HUDPaint", "PaintOurHud", HUDPaint );
+
+--[[
+	A box when you move inside one of the nodes with additional information
+	about the node (CPU, memory, pods,...)
+]]
 
 net.Receive("NodeMessage", function()
 	local rTable = net.ReadTable()

@@ -1,45 +1,49 @@
---[[ Kubernetes URL, this one is used through kubectl proxy ]]
+--[[
+	Kubernetes API URL, this one is used through kubectl proxy.
+]]
 KUBERURL = "localhost:8001"
 
 teams = {}
---[[ Holds the npc model data ]]
+--[[
+	Holds the npc model data.
+]]
 model = {}
---[[ The model and versions that are checked ]]
+--[[
+	The model and versions that are checked.
+]]
 model[1] = {}
 model[1]["model"] = "npc_citizen"
 model[1]["version"] = "v1"
 model[2] = {}
 model[2]["model"] = "npc_kleiner"
 model[2]["version"] = "v2"
-model[3] = {}
-model[3]["model"] = "npc_eli"
-model[3]["version"] = "v3"
 
---[[ Different teams doesn't really do anything but you need it as a label on your deployment ]]
+--[[
+	Teams don't really do anything but required as a label on your deployment.
+]]
 teams["green"] = {}
 teams["red"] = {}
 teams["purple"] = {}
 teams["ebony"] = {}
 teams["magenta"] = {}
 teams["ivory"] = {}
--- enemy_npc = "npc_zombie"
 enemy_npc = "npc_antlion"
 
---[[ Are used to send data strings to the GUI to update the node-information ]]
+--[[
+	These are used to send data strings to the GUI to update the 
+	node-information.
+]]
 util.AddNetworkString("NodeMessage")
 util.AddNetworkString("breakHUD")
 
 --[[
- * The main loop, that shouldn't be named Main().
- ]]
+	The main loop, that shouldn't be named Main().
+]]
 function Main()
-    --[[
-     * Gets the list of running application from Marathon.
-     */
-    // TODO: rewrite this http.Fetch() too
-	// TODO: Change API to be Kubernetes compatibl
-  ]]
-		--[[ Data required from the Pods API ]]
+	--[[
+		Gets the list of running application from Kubernetes.
+		Data required from the Pods API.
+	]]
 	http.Fetch( "http://"..KUBERURL.."/api/v1/namespaces/default/pods",
         function(pbody, len, headers, code)
 			httpConnected(pbody, len, headers, code)
@@ -62,10 +66,14 @@ function Main()
 		podsTable = util.JSONToTable(pbody)
 		podsTable = podsTable['items']
 		
-		--[[ Amount of pods ]]
+		--[[
+			Amount of pods.
+		]]
 		local numberP = table.Count(podsTable)
 		
-		--[[ Will iterate through all existing containers ]]
+		--[[
+			Will iterate through all existing containers.
+		]]
 		for i=1, numberP do 
 			contTable = podsTable[i]
 			serName = contTable['metadata']['name']
@@ -77,14 +85,20 @@ function Main()
 			end
 			nodeName = contTable['spec']['nodeName']
 
-			--[[ Will dissect the tag part from the imagename. This will be used to decide the model ]]
+			--[[
+				Will dissect the tag part from the imagename.
+				This will be used to decide the model.
+			]]
 			local version = {}
 			for word in imageV:gmatch("([^:]+)") do 
 				table.insert(version, word)
 			end
 			imageV = version[2]
 		
-			--[[ Checks if the container has a running phase and then starts spawning models ]]
+			--[[
+				Checks if the container has a running phase and then starts
+				spawning models.
+			]]
 			if phase == "True" then
 				local n = entitiesSpawned(serName)
 				if n < 1 then 
@@ -98,10 +112,14 @@ function Main()
 		doubleEnts(podsTable)
 	end
 	
-	--[[ Will check if a model spawns double ]]
+	--[[
+		Will check if a model spawns double.
+	]]
 	function doubleEnts(testTable)
-	
-		--[[ Get all entities on the server and make a table with the unique ones if they have a NPC model ]]
+		--[[
+			Get all entities on the server and make a table with the unique ones
+			if they have a NPC model.
+		]]
 		podEntt = ents.GetAll()
 		filtClt = {}
 		for i=1, table.Count(podEntt) do
@@ -119,9 +137,11 @@ function Main()
 			   hasha[v] = true
 		   end
 		end
-		
-		--[[ Checks the names and makes a new table out of the ones that are matched 
-			It will be made into a new table that only holds the unique values.]]
+		--[[
+			Checks the names and makes a new table out of the ones that are
+			matched.
+			It will be made into a new table that only holds the unique values.
+		]]
 		checkNames = {}
 		if table.Count(ress) > table.Count(testTable) then
 			for i=1, table.Count(ress) do
@@ -148,7 +168,9 @@ function Main()
 		end	
 	end
 	
-	--[[ Will check the differences between two tables and return it ]]
+	--[[
+		Will check the differences between two tables and return it.
+	]]
 	function difference(a, b)
 		local ai = {}
 		local r = {}
@@ -163,7 +185,9 @@ function Main()
 		return r
 	end
 	
-	--[[ USES DEPLOYMENT API TO CHECK FOR DOUBLE MODELS AND CONTAINERS ]]
+	--[[
+		Uses deployment API to check for double models and containers.
+	]]
 	http.Fetch( "http://"..KUBERURL.."/apis/apps/v1beta1/namespaces/default/deployments",
         function(debody, len, headers, code)
 			httpConnectedDeps(debody, len, headers, code)
@@ -186,13 +210,16 @@ function Main()
 		depsCount = table.Count(depsTable)
 		
 		for i=1, depsCount do
-			--[[ This is done because something the tables are buggy ]]
+			--[[
+				This is done because something the tables are buggy.
+			]]
 			deps2Table = depsTable[i]
 			depsName = deps2Table['metadata']['name']
 			betweenTable = deps2Table['spec']['template']['spec']['containers']
 			depsImage = betweenTable[1]['image']
-			
-			--[[ Same function as with pods ]]
+			--[[
+				Same function as with pods.
+			]]
 			local version = {}
 			for word in depsImage:gmatch("([^:]+)") do 
 				table.insert(version, word)
@@ -205,7 +232,7 @@ function Main()
 	--[[ 
 		Is used to check the entities if they are using the correct model 
 		This will make sure that rolling updates are automatically updated
-		]]
+	]]
 	function checkEntities(deploymentN, im)
 		podEnt = ents.GetAll()
 		filtCl = {}
@@ -224,15 +251,22 @@ function Main()
 			   hash[v] = true
 		   end
 		end
-		--[[ Will compare a containername to a deploymentname & checks if the containernpc has the right model ]]
+		--[[
+			Will compare a containername to a deploymentname & checks if the
+			containernpc has the right model
+		]]
 		for i=1, table.Count(res) do
 			local stringMatch = {}
 			local containerName = res[i]:GetName()
-			--[[ splits containername so it can be matched to a deployment ]]
+			--[[
+				splits containername so it can be matched to a deployment
+			]]
 			for word in containerName:gmatch("([^-]+)") do 
 				table.insert(stringMatch, word)
 			end
-			--[[ modelcheck happens here ]]
+			--[[
+				modelcheck happens here
+			]]
 			if stringMatch[1] == deploymentN then
 				local modelMatch = {}
 				for j=1, table.Count(model) do
@@ -247,19 +281,20 @@ function Main()
 		end
 	end
 	
-	--[[ This makes it possible to start showing node info ]]
-   --[[
-     * Returns the count of all NPCs spawned for this service.
-     ]]
-	 
-  entitiesSpawned = function(podName)
-      if not podName then
-          return 10000000
-			end
-			return table.Count(ents.FindByName(podName))
-  end
+	--[[
+		This makes it possible to start showing node info.
+		Returns the count of all NPCs spawned for this service.
+	]]	 
+	entitiesSpawned = function(podName)
+		if not podName then
+			return 10000000
+		end
+		return table.Count(ents.FindByName(podName))
+	end
 	
-	--[[ Checks if a table is empty or not ]]
+	--[[
+		Checks if a table is empty or not
+	]]
 	function is_empty(t)
 		for _,_ in pairs(t) do
 			return false
@@ -267,87 +302,94 @@ function Main()
 		return true
 	end
 	
-  --[[
-   * Does the actual spawn of a NPC/entity.
-   ]]
-  blazeSpawn = function(what, team, type, version, nodeid)
-      if not teams[team] then
-          return
-      end
-			--[[ Checks for different image version and provides a different model1
-				 Used for rolling updates.
-				]]
-			local e
-			for i=1, table.Count(model) do
-				if version == "v"..i then
-					e = model[i]["model"]
-					break
-				else
-					e = model[1]["model"]
-				end
+	--[[
+		Does the actual spawn of a NPC/entity.
+	]]
+	blazeSpawn = function(what, team, type, version, nodeid)
+		if not teams[team] then
+			return
+		end
+		--[[
+			Checks for different image version and provides a different
+			model1.  Used for rolling updates.
+		]]
+		local e
+		for i=1, table.Count(model) do
+			if version == "v"..i then
+				e = model[i]["model"]
+				break
+			else
+				e = model[1]["model"]
 			end
-			
-			--[[ Decides the spawn of the model with the node location ]]
-			nodeC = table.Count(node)
-			for i=1, nodeC do
-				if nodeid == node[i]["name"] then
-					xX = node[i]["x"]
-					yY = node[i]["y"]
-					rangeX = rangeTableX[3] - 50
-					rangeY = rangeTableY[2] - 50
-				end
+		end
+		
+		--[[
+			Decides the spawn of the model with the node location.
+		]]
+		nodeC = table.Count(node)
+		for i=1, nodeC do
+			if nodeid == node[i]["name"] then
+				xX = node[i]["x"]
+				yY = node[i]["y"]
+				rangeX = rangeTableX[3] - 50
+				rangeY = rangeTableY[2] - 50
 			end
-      PrintMessage(HUD_PRINTTALK, "Spawning for service "..what)
-			--[[ Create entity and spawn it ]]
-      ent = ents.Create(e)
-      ent:SetName(what)
-			local zZ = -12700
-      ent:SetPos(Vector(math.random(xX-rangeX,xX+rangeX),math.random(yY-rangeY,yY+rangeY),zZ))
-      ent:Spawn()
-      ent:Activate()
-      ent:DropToFloor()
-	
-			--[[ Entity settings ]]
-			ent:AddRelationship(enemy_npc.." D_HT 99")
-			ent:AddRelationship(enemy_npc.." D_FR 0")
-			ent:CapabilitiesRemove(CAP_MOVE_GROUND)
-			ent:SetMaxHealth(50)
-			ent:SetHealth(50)
-      ent:SetMovementActivity(ACT_IDLE)
-      ent:SetSchedule(SCHED_IDLE_STAND)
-  end
+		end
+		PrintMessage(HUD_PRINTTALK, "Spawning for service "..what)
+		--[[
+			Create entity and spawn it
+		]]
+		ent = ents.Create(e)
+		ent:SetName(what)
+		local zZ = -12700
+		ent:SetPos(Vector(math.random(xX-rangeX,xX+rangeX),math.random(yY-rangeY,yY+rangeY),zZ))
+		ent:Spawn()
+		ent:Activate()
+		ent:DropToFloor()
+		--[[
+			Entity settings
+		]]
+		ent:AddRelationship(enemy_npc.." D_HT 99")
+		ent:AddRelationship(enemy_npc.." D_FR 0")
+		ent:CapabilitiesRemove(CAP_MOVE_GROUND)
+		ent:SetMaxHealth(50)
+		ent:SetHealth(50)
+		ent:SetMovementActivity(ACT_IDLE)
+		ent:SetSchedule(SCHED_IDLE_STAND)
+	end
 
-  --[[
-   * This sends the DELETE to Marathon.
-   */
- 	// TODO: Change API to be Kubernetes compatible ]]
-  doKillContainer = function(killme)
-	print("container that will be killed: "..killme)
-      local url = "http://"..KUBERURL.."/api/v1/namespaces/default/pods/"..killme
-      local data =
-      {
-          url = url,
-          method = "DELETE",
-          parameters = {},
-          success = function(code, body, headers)
-              if code ~= 200 then
-                  print("[ERROR] failed to shoot container!")
-                  return
-              end
-              PrintMessage(HUD_PRINTCENTER, "Container:  "..killme.."  will go down")
-			PrintMessage(HUD_PRINTTALK, "Container:  "..killme.."  will go down")
-          end,
-          failed = function(message)
-              print("[ERROR] failed")
-          end
-      }
-      HTTP(data)
-  end
+	--[[
+		This sends the DELETE to Kubernetes
+	]]
+	doKillContainer = function(killme)
+		print("Pod that will be killed: "..killme)
+		local url = "http://"..KUBERURL.."/api/v1/namespaces/default/pods/"..killme
+		local data =
+		{
+			url = url,
+			method = "DELETE",
+			parameters = {},
+			success = function(code, body, headers)
+				if code ~= 200 then
+					print("[ERROR] failed to shoot container!")
+					return
+				end
+				PrintMessage(HUD_PRINTCENTER, "Pod:  "..killme.."  will go down")
+				PrintMessage(HUD_PRINTTALK, "Pod:  "..killme.."  will go down")
+			end,
+			failed = function(message)
+				print("[ERROR] failed")
+			end
+		}
+		HTTP(data)
+	end
 
 end
 
---[[ Creates the enemymodel ]]
-function Enemies()
+--[[
+	Creates the bugmodel
+]]
+function Bugs()
 	blazeSpawnKiller = function()
         local e = enemy_npc
         local entZ = ents.Create(e)
@@ -366,15 +408,18 @@ function Enemies()
         entZ:SetMovementActivity(ACT_WALK)
         entZ:SetSchedule(SCHED_FORCED_GO)
     end
-
     blazeSpawnKiller()
 end
 
---[[ Do things when a NPC dies or something ]]
+--[[
+	Do things when a NPC dies or something
+]]
 hook.Add("OnNPCKilled", "OnNPCKilled", function(npc, attacker, inflictor)
     local you = attacker:GetName()
 
-    --[[ Spawn some goods when someone dies ]]
+    --[[
+		Spawn some goods when someone dies
+	]]
     local goodies = {
         "item_healthkit",
         "item_ammo_smg1",
@@ -386,9 +431,11 @@ hook.Add("OnNPCKilled", "OnNPCKilled", function(npc, attacker, inflictor)
 	goods:SetPos(npc:LocalToWorld(npc:OBBCenter()))
 	goods:Spawn()
 
-    --[[ Actually kill something on Mesos here
-    // Example value of `npc`:
-    //   NPC [184][npc_kleiner] --]]
+    --[[
+		Actually kill something on Mesos here
+		// Example value of `npc`:
+		//   NPC [184][npc_kleiner
+	]]
     for npcid in string.gmatch(tostring(npc), "%[([%d]+)%]") do
         eid = npcid
     end
@@ -397,7 +444,9 @@ hook.Add("OnNPCKilled", "OnNPCKilled", function(npc, attacker, inflictor)
         doKillContainer(service)
     end
 
-    --[[ Stuff that happens when the player inflicts death goes here ]]
+    --[[
+		Stuff that happens when the player inflicts death goes here
+	]]
     if you ~= "none" then
         local theplayer = 1
         local ply = Entity(theplayer)
@@ -406,34 +455,40 @@ hook.Add("OnNPCKilled", "OnNPCKilled", function(npc, attacker, inflictor)
     end
 end)
 
---[[ headshot! ]]
+--[[
+	headshot!
+]]
 hook.Add("ScaleNPCDamage", "ScaleNPCDamage", function(deadplayer, hitgroup, dmginfo)
     if (hitgroup == 0) then
         PrintMessage(HUD_PRINTTALK, "HEADSHOT!")
     end
 end)
 
---[[ Starts the spawn of the enemies ]]
-hook.Add( "PlayerSay", "SpawnEnemies", function( ply, text, public )
+--[[
+	Starts the spawn of the bugs
+]]
+hook.Add( "PlayerSay", "SpawnBugs", function( ply, text, public )
 	text = string.lower( text ) -- Make the chat message entirely lowercase
 		
-	--[[ Stops the spawn of the enemies ]]
-	if ( text == "stopspawnenemies" ) then
-		timer.Stop("Enemies()")
-		-- timer.Destroy("Enemies()")
-		PrintMessage(HUD_PRINTTALK, "Stop Spawning Enemies")
+	--[[
+		Stops the spawn of the bugs
+	]]
+	if ( text == "stopspawnbugs" ) then
+		timer.Stop("Bugs()")
+		-- timer.Destroy("Bugs()")
+		PrintMessage(HUD_PRINTTALK, "Stop Spawning Bugs")
 	-- else
-		-- PrintMessage(HUD_PRINTTALK, "Unrecognized StopSpawnEnemies")
+		-- PrintMessage(HUD_PRINTTALK, "Unrecognized StopSpawnBugs")
 	end
 	
-	--[[ Stops the spawn of the enemies && Destroys all enemy entities ]]
-	if ( text == "despawnenemies" ) then
-		timer.Stop("Enemies()")
-		-- timer.Destroy("Enemies()")
+	--[[ Stops the spawn of the bugs && Destroys all bug entities ]]
+	if ( text == "despawnbugs" ) then
+		timer.Stop("Bugs()")
+		-- timer.Destroy("Bugs()")
 		
 		podEnttr = ents.GetAll()
-		-- enemyTable = {}
-		PrintMessage(HUD_PRINTTALK, "Stop Spawn & Remove Spawned Enemies")
+		-- bugTable = {}
+		PrintMessage(HUD_PRINTTALK, "Stop Spawn & Remove Spawned Bugs")
 		for i=1, table.Count(podEnttr) do
 			if podEnttr[i]:GetClass() == enemy_npc then
 				podEnttr[i]:Remove()
@@ -441,28 +496,30 @@ hook.Add( "PlayerSay", "SpawnEnemies", function( ply, text, public )
 		end
 	end
 		
-	--[[ Starts the spawn of the enemies ]]
-	if ( text == "spawnenemies" ) then
-		if ( ! timer.Exists( "Enemies()" ) ) then
-			timer.Create("Enemies()", 5 ,0 , Enemies)
+	--[[ Starts the spawn of the bugs ]]
+	if ( text == "spawnbugs" ) then
+		if ( ! timer.Exists( "Bugs()" ) ) then
+			timer.Create("Bugs()", 5 ,0 , Bugs)
 		end
-		timer.Pause("Enemies()")
-		timer.Start("Enemies()")
-		PrintMessage(HUD_PRINTTALK, "Start Spawning Enemies")
+		timer.Pause("Bugs()")
+		timer.Start("Bugs()")
+		PrintMessage(HUD_PRINTTALK, "Start Spawning Bugs")
 	-- else
-	-- 	PrintMessage(HUD_PRINTTALK, "Unrecognized SpawnEnemies")
+	-- 	PrintMessage(HUD_PRINTTALK, "Unrecognized SpawnBugs")
 	end
-		
-	
 end )
 
---[[ Takes care of the spawning of nodes 
-	 This happens through the creation of range tables and
-	 .....]]
+--[[
+	Takes care of the spawning of nodes. This happens through the creation of
+	range tables and
+]]
 function fenceSpawn()
-	--[[ Tables will be used to generate a square with 8 blocks ]]
-	
-	--[[ Read Node API ]]
+	--[[
+		Tables will be used to generate a square with 8 blocks
+	]]
+	--[[
+		Read Node API
+	]]
 	http.Fetch( "http://"..KUBERURL.."/api/v1/nodes",
         function(body, len, headers, code)
 			httpConnected(body, len, headers, code)
@@ -483,8 +540,9 @@ function fenceSpawn()
 		local apiTable = util.JSONToTable(body)
 		node = {}
 		apiTable = apiTable["items"]
-		
-		--[[ Gather all node data necessary ]]
+		--[[
+			Gather all node data necessary
+		]]
 		for i=1, table.Count(apiTable) do
 			local metaTable = apiTable[i]
 			node[i] = {}
@@ -494,14 +552,18 @@ function fenceSpawn()
 			local cores = metaTable["status"]["capacity"]["cpu"]
 			node[i]["memory"] = mem
 			node[i]["cores"] = cores
-			
-			--[[ Used to calculate the size of node depending on the amount of memory ]]
+			--[[
+				Used to calculate the size of node depending on the amount of
+				memory
+			]]
 			for word in mem:gmatch("([^a-zA-Z]+)") do 
 				table.insert(memory, word)
 			end
 			node[i]["calcmemory"] = tonumber(memory[1])/2200000
 			
-			--[[x, y and z start values ]]
+			--[[
+				x, y and z start values
+			]]
 			node[i]["y"] = 2000
 			if i == 1 then
 				node[i]["x"] = -1000
@@ -512,15 +574,22 @@ function fenceSpawn()
 			end
 			node[i]["z"] = -12700
 		end
-	--[[ Counts the amount of nodes ]]
+	--[[
+		Counts the amount of nodes
+	]]
 		for n=1, table.Count(node) do
 			local z = node[n]["z"]
-			--[[ the rangetables indicate the range from the center of the node to the sides ]]
+			--[[
+				the rangetables indicate the range from the center of the node
+				to the sides.
+			]]
 			rangeTableX = {-200,0,200,0,-200,-200,200,200}
 			rangeTableY = {0,200,0,-200,200,-200,200,-200}
 			node[n]["xRangeTable"] = {}
 			node[n]["yRangeTable"] = {}
-			--[[ Loops through the amount of ranges ]]
+			--[[
+				Loops through the amount of ranges
+			]]
 			for i=1, table.Count(rangeTableX) do
 				rangeTableX[i] = rangeTableX[i] * node[n]["calcmemory"]
 				rangeTableY[i] = rangeTableY[i] * node[n]["calcmemory"]
@@ -528,7 +597,9 @@ function fenceSpawn()
 				node[n]["yRangeTable"][i] = rangeTableY[i]
 				xS = node[n]["x"] + (rangeTableX[i])
 				yS = node[n]["y"] + (rangeTableY[i])
-				--[[ Loops to put two blocks on top of each other ]]
+				--[[
+					Loops to put two blocks on top of each other
+				]]
 				for j=1, 2 do 
 					local ent = ents.Create("prop_physics")
 					local vec = Vector(xS, yS, z)
@@ -536,37 +607,53 @@ function fenceSpawn()
 					ent:SetPos(vec)
 					ent:Spawn()
 					ent:DropToFloor()
-					--[[ Set the material of the boxes ]]
+					--[[
+						Set the material of the boxes
+					]]
 					ent:SetMaterial("phoenix_storms/gear")
-					--[[ Make it so the blocks cannot move ]]
+					--[[
+						Make it so the blocks cannot move
+					]]
 					local physObj = ent:GetPhysicsObject()
 					if physObj:IsValid( ) then physObj:EnableMotion( false ) end
-				--[[ ends 1-2 for ]]
+				--[[
+					ends 1-2 for
+				]]
 				end
-			--[[ ends ranges loop ]]	
+			--[[
+				ends ranges loop
+			]]	
 			end
 		end
 	end
 end
 
---[[ Will spawn a GUI with node-info when the player enters a node area ]]
+--[[
+	Will spawn a GUI with node-info when the player enters a node area
+]]
 function giveNodeInfo()
 	if podsTable != nil then
 		ert = ents.GetAll()
-		--[[ Finds player entity ]]
+		--[[
+			Finds player entity
+		]]
 		for i=1, table.Count(ert) do
 			if ert[i]:GetClass() == "player" then
 				plyr = ert[i]
 			end
 		end
-		--[[ Create an area with two vectors ]]
+		--[[
+			Create an area with two vectors
+		]]
 		for i=1, table.Count(node) do
 			local pos1 = Vector(node[i]["x"]-node[i]["xRangeTable"][3],node[i]["y"]-node[i]["yRangeTable"][2],-12000.968750)
 			local pos2 = Vector(node[i]["x"]+node[i]["xRangeTable"][3],node[i]["y"]+node[i]["yRangeTable"][2],-12799.968750)
 			netTable = {}
 			OrderVectors(pos1,pos2)
 			checkT = plyr:GetPos():WithinAABox(pos1,pos2)
-			--[[ Check if player is inside the created area ]]
+			--[[
+				Check if player is inside the created area
+			]]
 			if plyr:GetPos():WithinAABox(pos1,pos2) then
 				netTable["node"] = node[i]["name"]
 				netTable["mem"] = node[i]["memory"]
@@ -585,7 +672,9 @@ function giveNodeInfo()
 				net.Send(plyr)
 				break
 			else
-				--[[ If player is outside of area GUI will dissappear ]]
+				--[[
+					If player is outside of area GUI will dissappear
+				]]
 				netTable["node"] = "error"
 				net.Start("NodeMessage")
 				net.WriteTable(netTable)
@@ -607,6 +696,6 @@ end
 
 setSpawn()
 fenceSpawn()
+
 timer.Create("Main()", 3, 0, Main)
 timer.Create("nodeInfo()", 3, 0,giveNodeInfo)
-
