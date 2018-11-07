@@ -55,10 +55,10 @@ These image tags need to be either
 	
 Otherwise it will default to the v1 model. Each model = specific pod.
 
-#### Bugs
-By pressing `Y` the chat window should appear, type `SpawnBugs` and "bugs" will start spawning in random nodes.
-By pressing `Y` again and typing `StopSpawnBugs`, the "bugs" will stop spawning but existing "bugs" will not disappear.
-By pressing `Y` again and typing `DespawnBugs`, the "bugs" will stop spawning and all existing "bugs" will disappear.
+#### Introducing bugs
+- By pressing `Y` the chat window should appear, type `SpawnBugs` and "bugs" will start spawning in random nodes.
+- By pressing `Y` again and typing `StopSpawnBugs`, the "bugs" will stop spawning but existing "bugs" will not disappear.
+- By pressing `Y` again and typing `DespawnBugs`, the "bugs" will stop spawning and all existing "bugs" will disappear.
 
 ### Timer
 The containers will spawn on a **3** second timer. So updates **aren't instant**.
