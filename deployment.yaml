@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: nginxnpc
+  name: kubecon
 spec:
   replicas: 3
   strategy: 
@@ -16,5 +16,5 @@ spec:
         type: npc
     spec:
       containers:
-        - image: tourna/nginx:v1
-          name: nginx
+        - image: gluobe/garrys-pod:v1
+          name: garrys-pod
