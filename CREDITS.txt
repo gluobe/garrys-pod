@@ -1,0 +1,5 @@
+Credit where credit's due:
+- The people at Wehkamp for some of the original code (based on Mesos & Marathon), https://github.com/wehkamp/blaze-extreme-container-manager
+- Some of the awesome people at Gluo:
+  - Arnout Hoebreckx, Gluo intern (Kubernetes integration)
+  - Ben Leynen, Gluo Employee (for some additional features)
