@@ -1,0 +1,3 @@
+kubectl apply -f deployment.yaml
+kubectl scale deployment/kubecon --replicas=6
+kubectl set image deployment/kubecon garrys-pod=gluobe/garrys-pod:v2
